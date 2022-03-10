@@ -18,7 +18,9 @@ from scipy.ndimage import fourier_shift
 import numpy as np
 from silx.io.dictdump import dicttoh5, h5todict
 
-from .xanes_math import mrtv_mpc_combo_reg, mrtv_reg3, mrtv_ls_combo_reg, shift_img
+from .reg_algs import mrtv_mpc_combo_reg, mrtv_reg, mrtv_ls_combo_reg, shift_img
+
+N_CPU = os.cpu_count()-1
 __all__ = ['regtools']
 
 
@@ -62,7 +64,7 @@ class regtools():
         self.use_chunk = False
         self.alg_mrtv_level = 5
         self.alg_mrtv_width  = 10
-        self.alg_mrtv_sp_step = 0.2
+        self.alg_mrtv_sp_kernel = 3
         self.alg_mrtv_sp_wz = 8
 
         self.xanes3D_recon_path_template = None
@@ -94,7 +96,8 @@ class regtools():
         else:
             self.mode = ''
         self.ref_mode = 'neighbor'
-    
+
+
     def set_analysis_type(self, dtype='3D_XANES'):
         """
         Parameters
@@ -108,43 +111,58 @@ class regtools():
         """
         self.data_type = dtype.upper()
 
+
     def set_chunk_sz(self, chunk_sz):
         self.chunk_sz = chunk_sz
 
+
     def set_roi(self, roi):
         self.roi = roi
-        
+
+
     def set_eng_list(self, eng_list):
         self.eng_list = eng_list
+
 
     def set_xanes3D_raw_h5_top_dir(self, raw_h5_top_dir):
         self.xanes3D_raw_h5_top_dir = raw_h5_top_dir
 
+
     def set_raw_data_info(self, **kwargs):
         self.raw_data_info = kwargs
+
 
     def set_xanes3D_recon_path_template(self, path_template):
         self.xanes3D_recon_path_template = path_template
 
+
     def set_xanes2D_raw_filename(self, filename):
         self.xanes2D_raw_filename = filename
-        
+
+
     def set_xanes2D_tmp_filename(self, filename):
         self.xanes2D_tmp_filename = filename
-        
+
+
     def set_xanes3D_tmp_filename(self, filename):
         self.xanes3D_tmp_filename = filename
+
+
+    def set_xanes3D_scan_ids(self, avail_recon_ids):
+        self.img_ids = avail_recon_ids[self.img_id_s:self.img_id_e+1]
+
 
     def set_indices(self, img_id_s, img_id_e, fixed_img_id):
         self.img_id_s = img_id_s
         self.img_id_e = img_id_e
         self.fixed_img_id = fixed_img_id
 
+
     def set_reg_options(self, use_mask=True, mask_thres=0,
                         use_chunk=True, chunk_sz=7,
                         use_smooth_img=False, smooth_sigma=0,
-                        mrtv_level=5, mrtv_width=10, 
-                        mrtv_sp_wz=8, mrtv_sp_step=0.2):
+                        mrtv_level=5, mrtv_width=10,
+                        mrtv_sp_wz=8, mrtv_sp_kernel=3):
         """
         the current use_anchor setting is not contraversial. all the registrations
         use some anchors. It is not anchor but chunk setting making differences.
@@ -179,8 +197,8 @@ class regtools():
         self.alg_mrtv_level = mrtv_level
         self.alg_mrtv_width  = mrtv_width
         self.alg_mrtv_sp_wz = mrtv_sp_wz
-        self.alg_mrtv_sp_step = mrtv_sp_step
-        
+        self.alg_mrtv_sp_kernel = mrtv_sp_kernel
+
     # def set_xanes3D_reg_options(self, use_mask=True, mask=None, mask_thres=0,
     #                             use_chunk=True, chunk_sz=7,
     #                             use_smooth_img=False, smooth_sigma=0):
@@ -217,16 +235,20 @@ class regtools():
     #     self.img_smooth_sigma = smooth_sigma
 
     def set_method(self, method):
-        self.method = method
+        self.method = method.upper()
+
 
     def set_ref_mode(self, ref_mode):
-        self.ref_mode = ref_mode
+        self.ref_mode = ref_mode.upper()
+
 
     def set_img_data(self, moving):
         self.img = moving
 
+
     def set_mask(self, mask):
         self.mask = mask
+
 
     def set_saving(self, save_path, fn=None):
         if save_path is not None:
@@ -236,6 +258,7 @@ class regtools():
         self.savefn = os.path.join(self.save_path, fn)
         print('1. The registration results will be saved in {:s}'
               .format(self.savefn))
+
 
     def read_xanes2D_tmp_file(self, mode='reg'):
         with h5py.File(self.xanes2D_tmp_filename, 'r') as f:
@@ -247,25 +270,30 @@ class regtools():
             if len(self.mask.shape) == 1:
                 self.mask = None
             self.eng_list = f['analysis_eng_list'][:]
-            
+
+
     def read_xanes3D_tmp_file(self):
         with h5py.File(self.xanes3D_tmp_filename, 'r') as f:
             self.mask = f['xanes3D_reg_mask'][:]
             if len(self.mask.shape) == 1:
                 self.mask = None
             self.eng_list = f['analysis_eng_list'][:]
-    
+
+
     def compose_dicts(self):
         if self.data_type == '3D_XANES':
             if self.fixed_img_id in range(self.img_id_s, self.img_id_e):
-                self.anchor = self.fixed_img_id - self.img_id_s
-                self.data_pnts = self.img_id_e - self.img_id_s 
-                self.img_ids = np.arange(self.img_id_s, self.img_id_e)
-                self.anchor_id = self.fixed_img_id                
+                self.anchor = self.fixed_img_id-self.img_id_s
+                self.data_pnts = self.img_id_e - self.img_id_s
+                print(self.img_id_s, self.img_id_e)
+                print(len(self.img_ids))
+                print(self.img_ids)
+                print(self.fixed_img_id-self.img_id_s)
+                self.anchor_id = self.img_ids[self.fixed_img_id-self.img_id_s]
                 cnt = 0
-                for ii in range(self.img_id_s, self.img_id_e):
+                for ii in self.img_ids:
                     self.eng_dict[str(cnt).zfill(3)] = self.eng_list[cnt]
-                    self.img_ids_dict[str(cnt).zfill(3)] = self.img_ids[cnt]
+                    self.img_ids_dict[str(cnt).zfill(3)] = ii
                     cnt += 1
             else:
                 print('fixed_img_id is outside of [img_id_s, img_id_e].')
@@ -284,6 +312,7 @@ class regtools():
                 #     print('xanes3D raw h5 top dir is not defined.')
             else:
                 print('fixed_img_id is outside of [img_id_s, img_id_e].')
+
 
     def _chunking(self):
         """
@@ -342,6 +371,7 @@ class regtools():
             self.chunks[0] = {'chunk_s': 0}
             self.chunks[0]['chunk_e'] = self.data_pnts - 1
 
+
     def _alignment_scheduler(self, dtype='2D_XANES'):
         """
         2D XANES: [chunk_sz, img_s,     img_e,     ref_mode, fixed_img]
@@ -395,6 +425,7 @@ class regtools():
                                                 self.chunks[self.left_num_chunk-ii-1]['chunk_e']])
                 self.alignment_pair_list.append([self.anchor_chunk,
                                             self.anchor_chunk])
+                print(self.left_num_chunk, self.num_chunk)
                 for ii in range(self.left_num_chunk+1, self.num_chunk):
                     self.alignment_pair_list.append([self.chunks[ii-1]['chunk_e'],
                                                 self.chunks[ii]['chunk_e']])
@@ -444,6 +475,7 @@ class regtools():
             for ii in range(self.data_pnts-1):
                 self.alignment_pair_list.append([ii, ii+1])
             self.alignment_pair_list.append([self.anchor, self.anchor])
+
 
     def _sort_absolute_shift(self, trialfn, shift_dict=None, optional_shift_dict=None):
         """
@@ -532,6 +564,7 @@ class regtools():
                     abs_shift_dict[str(key).zfill(3)] = {'in_sli_shift':shift}
             f.close()
         self.abs_shift_dict = abs_shift_dict
+
 
     def reg_xanes2D_chunk(self, overlap_ratio=0.3):
         """
@@ -632,7 +665,7 @@ class regtools():
                 print('We are using "masked phase correlation" method for registration.')
                 for ii in range(len(self.alignment_pair_list)):
                     self.shift[ii] = phase_cross_correlation(self.img[self.alignment_pair_list[ii][0]],
-                                                             self.img[self.alignment_pair_list[ii][1]], 
+                                                             self.img[self.alignment_pair_list[ii][1]],
                                                              reference_mask=self.mask,
                                                              overlap_ratio=self.overlap_ratio)
                     shifted_image[ii] = np.real(np.fft.ifftn(fourier_shift(
@@ -685,21 +718,28 @@ class regtools():
                                            data=self.img[self.alignment_pair_list[ii][0]])
             elif self.method.upper() == 'MRTV':
                 print('We are using "multi-resolution total variation" method for registration.')
-                n_cpu = os.cpu_count()
-                with mp.get_context('spawn').Pool(int(n_cpu-1)) as pool:
-                    rlt = pool.map(partial(mrtv_reg3, self.alg_mrtv_level, self.alg_mrtv_width, 
-                                           self.alg_mrtv_sp_wz, self.alg_mrtv_sp_step), 
-                                   [[self.img[self.alignment_pair_list[ii][0]], 
-                                    self.img[self.alignment_pair_list[ii][1]]] 
+                print(self.alg_mrtv_sp_wz, self.alg_mrtv_sp_kernel)
+                pxl_conf = {'type': 'area',
+                            'levs': self.alg_mrtv_level,
+                            'wz': self.alg_mrtv_width,
+                            'lsw': 10}
+                sub_conf = {'use': True,
+                            'type': 'ana',
+                            'sp_wz': self.alg_mrtv_sp_wz,
+                            'sp_us': 10}
+                with mp.get_context('spawn').Pool(N_CPU) as pool:
+                    rlt = pool.map(partial(mrtv_reg, pxl_conf, sub_conf, None, self.alg_mrtv_sp_kernel),
+                                   [[self.img[self.alignment_pair_list[ii][0]],
+                                    self.img[self.alignment_pair_list[ii][1]]]
                                    for ii in range(len(self.alignment_pair_list))])
-                pool.close() 
+                pool.close()
                 pool.join()
 
                 for ii in range(len(rlt)):
                     self.shift[ii] = rlt[ii][3]
                 del(rlt)
                 gc.collect()
-                
+
                 for ii in range(len(self.alignment_pair_list)):
                     shifted_image[ii] = np.real(np.fft.ifftn(fourier_shift(
                             np.fft.fftn(self.img[self.alignment_pair_list[ii][1]]), self.shift[ii])))[:]
@@ -712,21 +752,20 @@ class regtools():
                                         data=self.img[self.alignment_pair_list[ii][0]])
             elif self.method.upper() == 'LS+MRTV':
                 print('We are using "line search and multi-resolution total variation" method for registration.')
-                n_cpu = os.cpu_count()
-                with mp.get_context('spawn').Pool(int(n_cpu-1)) as pool:
-                    rlt = pool.map(partial(mrtv_ls_combo_reg, self.alg_mrtv_width, 2, 10, 
-                                           self.alg_mrtv_sp_wz, self.alg_mrtv_sp_step), 
-                                   [[self.img[self.alignment_pair_list[ii][0]], 
-                                     self.img[self.alignment_pair_list[ii][1]]] 
+                with mp.get_context('spawn').Pool(N_CPU) as pool:
+                    rlt = pool.map(partial(mrtv_ls_combo_reg, self.alg_mrtv_width, 2, 10,
+                                           self.alg_mrtv_sp_wz, self.alg_mrtv_sp_wz),
+                                   [[self.img[self.alignment_pair_list[ii][0]],
+                                     self.img[self.alignment_pair_list[ii][1]]]
                                     for ii in range(len(self.alignment_pair_list))])
-                pool.close() 
+                pool.close()
                 pool.join()
 
                 for ii in range(len(rlt)):
                     self.shift[ii] = rlt[ii][3]
                 del(rlt)
                 gc.collect()
-                
+
                 for ii in range(len(self.alignment_pair_list)):
                     shifted_image[ii] = np.real(np.fft.ifftn(fourier_shift(
                             np.fft.fftn(self.img[self.alignment_pair_list[ii][1]]), self.shift[ii])))[:]
@@ -740,14 +779,14 @@ class regtools():
             elif self.method.upper() == 'MPC+MRTV':
                 print('We are using combo of "masked phase correlation" and "multi-resolution total variation" method for registration.')
                 for ii in range(len(self.alignment_pair_list)):
-                    _, _, _, self.shift[ii] = mrtv_mpc_combo_reg(self.img[self.alignment_pair_list[ii][0]], 
-                                                                 self.img[self.alignment_pair_list[ii][1]], 
+                    _, _, _, self.shift[ii] = mrtv_mpc_combo_reg(self.img[self.alignment_pair_list[ii][0]],
+                                                                 self.img[self.alignment_pair_list[ii][1]],
                                                                  reference_mask=self.mask,
-                                                                 overlap_ratio=self.overlap_ratio, 
+                                                                 overlap_ratio=self.overlap_ratio,
                                                                  levs=self.alg_mrtv_level,
-                                                                 wz=self.alg_mrtv_width, 
-                                                                 sp_wz=self.alg_mrtv_sp_wz, 
-                                                                 sp_step=self.alg_mrtv_sp_step)
+                                                                 wz=self.alg_mrtv_width,
+                                                                 sp_wz=self.alg_mrtv_sp_wz,
+                                                                 sp_step=self.alg_mrtv_sp_wz)
                     shifted_image[ii] = np.real(np.fft.ifftn(fourier_shift(
                             np.fft.fftn(self.img[self.alignment_pair_list[ii][1]]), self.shift[ii])))[:]
                     g11 = g1.create_group(str(ii).zfill(3))
@@ -759,6 +798,7 @@ class regtools():
                                         data=self.img[self.alignment_pair_list[ii][0]])
         f.close()
         print('Done!')
+
 
     def apply_xanes2D_chunk_shift(self, optional_shift_dict, trialfn=None, savefn=None):
         """
@@ -783,7 +823,7 @@ class regtools():
                 else:
                     del f['registration_results']
                     g0 = f.create_group('registration_results')
-    
+
                 g1 = g0.create_group('reg_parameters')
                 self.alignment_pair_list = f['/trial_registration/trial_reg_parameters/alignment_pairs'][:].tolist()
                 g1.create_dataset('alignment_pairs', data=self.alignment_pair_list)
@@ -794,9 +834,9 @@ class regtools():
                 g1.create_dataset('fixed_scan_id', data=self.anchor_id)
                 self.chunk_sz = f['/trial_registration/trial_reg_parameters/chunk_sz'][()]
                 g1.create_dataset('chunk_sz', data=self.chunk_sz)
-                self.method = f['/trial_registration/trial_reg_parameters/reg_method'][()]
+                self.method = f['/trial_registration/trial_reg_parameters/reg_method'][()].decode('ascii')
                 g1.create_dataset('reg_method', data=self.method)
-                self.ref_mode = f['/trial_registration/trial_reg_parameters/reg_ref_mode'][()]
+                self.ref_mode = f['/trial_registration/trial_reg_parameters/reg_ref_mode'][()].decode('ascii')
                 g1.create_dataset('reg_ref_mode', data=str(self.ref_mode.upper()))
                 self.img_ids_dict = h5todict(savefn, path='/trial_registration/trial_reg_parameters/scan_ids_dict')
                 self.eng_dict = h5todict(savefn, path='/trial_registration/trial_reg_parameters/eng_dict')
@@ -806,20 +846,20 @@ class regtools():
                 dicttoh5(self.img_ids_dict, savefn, mode='a',
                      overwrite_data=True,
                      h5path='/registration_results/reg_parameters/scan_ids_dict')
-    
+
                 dicttoh5(optional_shift_dict, savefn, mode='a', overwrite_data=True,
                          h5path='/registration_results/reg_parameters/user_determined_shift/relative_shift')
-    
+
                 self._sort_absolute_shift(trialfn, shift_dict=optional_shift_dict)
-    
+
                 shift = {}
                 for key, item in self.abs_shift_dict.items():
                     shift[key] = item['in_sli_shift']
-    
+
                 dicttoh5(shift, savefn, mode='a',
                          overwrite_data=True,
                          h5path='/registration_results/reg_parameters/user_determined_shift/absolute_shift')
-    
+
                 g2 = g0.create_group('reg_results')
                 g21 = g2.create_dataset('registered_xanes2D',
                                         shape=(len(self.img_ids_dict),
@@ -830,12 +870,12 @@ class regtools():
                 cnt1 = 0
                 for key in sorted(self.abs_shift_dict.keys()):
                     shift = self.abs_shift_dict[key]['in_sli_shift']
-                    
                     self._translate_single_img(self.img[int(key)], shift, self.method)
                     g21[cnt1] = self.img[int(key)][self.roi[0]:self.roi[1],
                                                    self.roi[2]:self.roi[3]]
                     g22[cnt1] = self.eng_dict[key]
                     cnt1 += 1
+
 
     def reg_xanes3D_chunk(self):
         """
@@ -849,14 +889,14 @@ class regtools():
         purpose.
 
         """
-        fn = self.xanes3D_recon_path_template.format(self.fixed_img_id,
+        fn = self.xanes3D_recon_path_template.format(self.img_ids[self.anchor],
                                                       str(self.xanes3D_recon_fixed_sli).zfill(5))
         self.fixed = tifffile.imread(fn)[self.roi[0]:self.roi[1], self.roi[2]:self.roi[3]]
         img = np.ndarray([2*self.xanes3D_sli_search_half_range,
                           self.roi[1]-self.roi[0],
                           self.roi[3]-self.roi[2]])
         self._alignment_scheduler(dtype='3D_XANES')
-        
+
         sli_s = self.xanes3D_recon_fixed_sli-self.xanes3D_sli_search_half_range
         sli_e = self.xanes3D_recon_fixed_sli+self.xanes3D_sli_search_half_range
 
@@ -923,11 +963,11 @@ class regtools():
                                      2*self.xanes3D_sli_search_half_range,
                                      3,
                                      3])
-            self.error = np.ndarray([len(self.alignment_pair_list),
-                                     2*self.xanes3D_sli_search_half_range])
-            self.si = np.ndarray(len(self.alignment_pair_list))
-            self.mse = np.ndarray(len(self.alignment_pair_list))
-            self.nrmse = np.ndarray(len(self.alignment_pair_list))
+        self.error = np.ndarray([len(self.alignment_pair_list),
+                                    2*self.xanes3D_sli_search_half_range])
+        self.si = np.ndarray(len(self.alignment_pair_list))
+        self.mse = np.ndarray(len(self.alignment_pair_list))
+        self.nrmse = np.ndarray(len(self.alignment_pair_list))
 
         if self.method.upper() == 'PC':
             print('We are using "phase correlation" method for registration.')
@@ -1036,25 +1076,25 @@ class regtools():
                                        data=self.fixed)
         elif self.method.upper() == 'MRTV':
             print('We are using "multi-resolution total variation" method for registration.')
-            n_cpu = os.cpu_count()
             sli_s = self.xanes3D_recon_fixed_sli-self.xanes3D_sli_search_half_range
             sli_e = self.xanes3D_recon_fixed_sli+self.xanes3D_sli_search_half_range
+            pxl_conf = dict(type='area', levs=self.alg_mrtv_level, wz=self.alg_mrtv_width, lsw=10)
+            sub_conf = dict(use=True, type='ana', sp_wz=self.alg_mrtv_sp_wz, sp_us=10)
             for ii in range(len(self.alignment_pair_list)):
                 fn = self.xanes3D_recon_path_template.format(self.img_ids_dict[str(self.alignment_pair_list[ii][0]).zfill(3)],
                                                              str(self.xanes3D_recon_fixed_sli).zfill(5))
                 self.fixed[:] = tifffile.imread(fn)[self.roi[0]:self.roi[1], self.roi[2]:self.roi[3]]
-                
+
                 jj_id = 0
                 for jj in range(sli_s, sli_e):
                     fn = self.xanes3D_recon_path_template.format(self.img_ids_dict[str(self.alignment_pair_list[ii][1]).zfill(3)], str(jj).zfill(5))
                     img[jj_id] = tifffile.imread(fn)[self.roi[0]:self.roi[1], self.roi[2]:self.roi[3]]
                     jj_id += 1
-                
-                with mp.get_context('spawn').Pool(int(n_cpu-1)) as pool:
-                    rlt = pool.map(partial(mrtv_reg3, self.alg_mrtv_level, self.alg_mrtv_width, 
-                                           self.alg_mrtv_sp_wz, self.alg_mrtv_sp_step), 
+
+                with mp.get_context('spawn').Pool(N_CPU) as pool:
+                    rlt = pool.map(partial(mrtv_reg, pxl_conf, sub_conf, None, self.alg_mrtv_sp_kernel),
                                    [[self.fixed, img[jj]] for jj in range(sli_e-sli_s)])
-                pool.close() 
+                pool.close()
                 pool.join()
 
                 tvl = []
@@ -1064,22 +1104,23 @@ class regtools():
                 tv = np.array(tvl).argmin()
                 del(rlt)
                 gc.collect()
-                
-                with mp.get_context('spawn').Pool(int(n_cpu-1)) as pool:
-                    rlt = pool.map(shift_img, 
+
+                with mp.get_context('spawn').Pool(N_CPU) as pool:
+                    rlt = pool.map(shift_img,
                                    [[img[jj], self.shift[ii, jj]] for jj in range(sli_e-sli_s)])
-                pool.close() 
+                pool.close()
                 pool.join()
 
-                tvl = []
                 for jj in range(len(rlt)):
-                    img[jj] = rlt[jj][3]
+                    img[jj] = rlt[jj]
                 del(rlt)
                 gc.collect()
 
                 g11 = g1.create_group(str(ii).zfill(3))
                 g11.create_dataset('mrtv_best_shift_id'+str(ii).zfill(3),
                                    data=tv)
+                g11.create_dataset('tv'+str(ii).zfill(3),
+                                   data=tvl)
                 g11.create_dataset('shift'+str(ii).zfill(3),
                                    data=self.shift[ii])
                 g11.create_dataset('trial_reg_img'+str(ii).zfill(3),
@@ -1088,25 +1129,24 @@ class regtools():
                                    data=self.fixed)
         elif self.method.upper() == 'LS+MRTV':
             print('We are using "multi-resolution total variation" method for registration.')
-            n_cpu = os.cpu_count()
             sli_s = self.xanes3D_recon_fixed_sli-self.xanes3D_sli_search_half_range
             sli_e = self.xanes3D_recon_fixed_sli+self.xanes3D_sli_search_half_range
             for ii in range(len(self.alignment_pair_list)):
                 fn = self.xanes3D_recon_path_template.format(self.img_ids_dict[str(self.alignment_pair_list[ii][0]).zfill(3)],
                                                              str(self.xanes3D_recon_fixed_sli).zfill(5))
                 self.fixed[:] = tifffile.imread(fn)[self.roi[0]:self.roi[1], self.roi[2]:self.roi[3]]
-                
+
                 jj_id = 0
                 for jj in range(sli_s, sli_e):
                     fn = self.xanes3D_recon_path_template.format(self.img_ids_dict[str(self.alignment_pair_list[ii][1]).zfill(3)], str(jj).zfill(5))
                     img[jj_id] = tifffile.imread(fn)[self.roi[0]:self.roi[1], self.roi[2]:self.roi[3]]
                     jj_id += 1
-                
-                with mp.get_context('spawn').Pool(int(n_cpu-1)) as pool:
+
+                with mp.get_context('spawn').Pool(N_CPU) as pool:
                     rlt = pool.map(partial(mrtv_ls_combo_reg, self.alg_mrtv_width, 2, 10,
-                                           self.alg_mrtv_sp_wz, self.alg_mrtv_sp_step), 
+                                           self.alg_mrtv_sp_wz, self.alg_mrtv_sp_wz),
                                    [[self.fixed, img[jj]] for jj in range(sli_e-sli_s)])
-                pool.close() 
+                pool.close()
                 pool.join()
 
                 tvl = []
@@ -1116,22 +1156,23 @@ class regtools():
                 tv = np.array(tvl).argmin()
                 del(rlt)
                 gc.collect()
-                
-                with mp.get_context('spawn').Pool(int(n_cpu-1)) as pool:
-                    rlt = pool.map(shift_img, 
+
+                with mp.get_context('spawn').Pool(N_CPU) as pool:
+                    rlt = pool.map(shift_img,
                                    [[img[jj], self.shift[ii, jj]] for jj in range(sli_e-sli_s)])
-                pool.close() 
+                pool.close()
                 pool.join()
 
-                tvl = []
                 for jj in range(len(rlt)):
-                    img[jj] = rlt[jj][3]
+                    img[jj] = rlt[jj]
                 del(rlt)
                 gc.collect()
 
                 g11 = g1.create_group(str(ii).zfill(3))
                 g11.create_dataset('mrtv_best_shift_id'+str(ii).zfill(3),
                                    data=tv)
+                g11.create_dataset('tv'+str(ii).zfill(3),
+                                   data=tvl)
                 g11.create_dataset('shift'+str(ii).zfill(3),
                                    data=self.shift[ii])
                 g11.create_dataset('trial_reg_img'+str(ii).zfill(3),
@@ -1148,20 +1189,20 @@ class regtools():
                 for jj in range(sli_s, sli_e):
                     fn = self.xanes3D_recon_path_template.format(self.img_ids_dict[str(self.alignment_pair_list[ii][1]).zfill(3)], str(jj).zfill(5))
                     img[jj_id] = tifffile.imread(fn)[self.roi[0]:self.roi[1], self.roi[2]:self.roi[3]]
-                    _, _, _, self.shift[ii, jj_id] = mrtv_mpc_combo_reg(self.fixed, img[jj_id], 
+                    _, _, _, self.shift[ii, jj_id] = mrtv_mpc_combo_reg(self.fixed, img[jj_id],
                                                                         reference_mask=self.mask,
-                                                                        overlap_ratio=self.overlap_ratio, 
+                                                                        overlap_ratio=self.overlap_ratio,
                                                                         levs=self.alg_mrtv_level,
                                                                         wz=self.alg_mrtv_width,
-                                                                        sp_wz=self.alg_mrtv_sp_wz, 
-                                                                        sp_step=self.alg_mrtv_sp_step)
+                                                                        sp_wz=self.alg_mrtv_sp_wz,
+                                                                        sp_step=self.alg_mrtv_sp_wz)
                     img[jj_id] = np.real(np.fft.ifftn(fourier_shift(np.fft.fftn(img[jj_id]),
                                                                     self.shift[ii, jj_id])))[:]
 
                     jj_id += 1
                 g11 = g1.create_group(str(ii).zfill(3))
-                g11.create_dataset('mrtv_best_shift_id'+str(ii).zfill(3),
-                                   data=self.shift[ii].argmin())
+                # g11.create_dataset('mrtv_best_shift_id'+str(ii).zfill(3),
+                #                    data=self.shift[ii].argmin())
                 g11.create_dataset('shift'+str(ii).zfill(3),
                                    data=self.shift[ii])
                 g11.create_dataset('trial_reg_img'+str(ii).zfill(3),
@@ -1169,6 +1210,7 @@ class regtools():
                 g11.create_dataset('trial_fixed_img'+str(ii).zfill(3),
                                    data=self.fixed)
         f.close()
+
 
     def apply_xanes3D_chunk_shift(self, shift_dict, sli_s, sli_e,
                                   trialfn=None, savefn=None, optional_shift_dict=None):
@@ -1209,7 +1251,7 @@ class regtools():
                 else:
                     del f['registration_results']
                     g0 = f.create_group('registration_results')
-    
+
                 g1 = g0.create_group('reg_parameters')
                 self.alignment_pair_list = f['/trial_registration/trial_reg_parameters/alignment_pairs'][:].tolist()
                 g1.create_dataset('alignment_pairs', data=self.alignment_pair_list)
@@ -1220,9 +1262,9 @@ class regtools():
                 g1.create_dataset('fixed_scan_id', data=self.anchor_id)
                 self.chunk_sz = f['/trial_registration/trial_reg_parameters/chunk_sz'][()]
                 g1.create_dataset('chunk_sz', data=self.chunk_sz)
-                self.method = f['/trial_registration/trial_reg_parameters/reg_method'][()]
+                self.method = f['/trial_registration/trial_reg_parameters/reg_method'][()].decode("utf-8")
                 g1.create_dataset('reg_method', data=self.method)
-                self.ref_mode = f['/trial_registration/trial_reg_parameters/reg_ref_mode'][()]
+                self.ref_mode = f['/trial_registration/trial_reg_parameters/reg_ref_mode'][()].decode("utf-8")
                 g1.create_dataset('reg_ref_mode', data=str(self.ref_mode.upper()))
                 self.xanes3D_sli_search_half_range = f['/trial_registration/trial_reg_parameters/sli_search_half_range'][()]
                 self.img_ids_dict = h5todict(savefn, path='/trial_registration/trial_reg_parameters/scan_ids_dict')
@@ -1233,25 +1275,25 @@ class regtools():
                 dicttoh5(self.img_ids_dict, savefn, mode='a',
                      overwrite_data=True,
                      h5path='/registration_results/reg_parameters/scan_ids_dict')
-    
+
                 self._sort_absolute_shift(trialfn, shift_dict=shift_dict, optional_shift_dict=optional_shift_dict)
                 dicttoh5(self.abs_shift_dict, savefn, mode='a',
                          overwrite_data=True,
                          h5path='/registration_results/reg_parameters/user_determined_shift/user_input_shift_lookup')
-    
+
                 shift = {}
                 slioff = {}
                 for key in sorted(self.abs_shift_dict.keys()):
                     shift[str(key).zfill(3)] = self.abs_shift_dict[key]['in_sli_shift']
                     slioff[str(key).zfill(3)] = self.abs_shift_dict[key]['out_sli_shift']
-    
+
                 dicttoh5(shift, savefn, mode='a',
                          overwrite_data=True,
                          h5path='/registration_results/reg_parameters/user_determined_shift/absolute_in_slice_shift')
                 dicttoh5(slioff, savefn, mode='a',
                          overwrite_data=True,
                          h5path='/registration_results/reg_parameters/user_determined_shift/absolute_out_slice_shift')
-    
+
                 g2 = g0.create_group('reg_results')
                 g21 = g2.create_dataset('registered_xanes3D',
                                         shape=(len(self.img_ids_dict),
@@ -1259,7 +1301,7 @@ class regtools():
                                                self.roi[1]-self.roi[0],
                                                self.roi[3]-self.roi[2]))
                 g22 = g2.create_dataset('eng_list', shape=(len(self.img_ids_dict),))
-    
+
                 # print(2)
                 img = np.ndarray([self.roi[1]-self.roi[0], self.roi[3]-self.roi[2]])
                 cnt1 = 0
@@ -1268,7 +1310,7 @@ class regtools():
                     slioff = self.abs_shift_dict[key]['out_sli_shift']
                     scan_id = self.img_ids_dict[key]
                     cnt2 = 0
-                    # print(3)
+                    print(self.method)
                     if self.method == 'SR':
                         yshift_int = int(shift[0, 2])
                         xshift_int = int(shift[1, 2])
@@ -1279,21 +1321,22 @@ class regtools():
                         xshift_int = int(shift[1])
                         shift[0] -= yshift_int
                         shift[1] -= xshift_int
-    
+
                     for ii in range(int(sli_s+slioff), int(sli_e+slioff)):
                         # print(4)
                         fn = self.xanes3D_recon_path_template.format(scan_id,
                                                                      str(ii).zfill(5))
                         img[:] = tifffile.imread(fn)[self.roi[0]-yshift_int:self.roi[1]-yshift_int,
                                                      self.roi[2]-xshift_int:self.roi[3]-xshift_int]
-    
+
                         self._translate_single_img(img, shift, self.method)
                         g21[cnt1, cnt2] = img[:]
                         cnt2 += 1
-    
+
                     g22[cnt1] = self.eng_dict[key]
                     cnt1 += 1
             # f.close()
+
 
     def save_reg_result(self, dtype='2D_XANES', data=None):
         if dtype.upper() == '2D_XANES':
@@ -1471,6 +1514,7 @@ class regtools():
         else:
             print("'dtype' can only be '2D_XANES' or '3D_XANES'. Quit!")
 
+
     def _translate_single_img(self, img, shift, method):
         if method.upper() in ['PC', 'MPC', 'MRTV', 'MPC+MRTV']:
             img[:] = np.real(np.fft.ifftn(fourier_shift(np.fft.fftn(img), shift)))[:]
@@ -1490,11 +1534,6 @@ class regtools():
             print('Nonrecognized method. Quit!')
             # exit()
 
+
     def xanes3D_shell_slicing(self, fn):
         pass
-    
-    
-
-
-
-

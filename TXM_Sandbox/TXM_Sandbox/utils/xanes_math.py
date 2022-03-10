@@ -5,106 +5,153 @@ Created on Mon Sep  2 12:18:19 2019
 
 @author: xiao
 """
-import time, os, gc
+import time
+import os
+import gc
 import multiprocess as mp
 
 import numpy as np
-from scipy.ndimage import (zoom, fourier_shift, median_filter as mf,
-                           gaussian_filter as gf)
-from scipy.optimize import least_squares as lsq
+from scipy.ndimage import (zoom, fourier_shift, median_filter as mf, shift as sshift,
+                           gaussian_filter as gf, binary_erosion)
+from scipy.optimize import least_squares as lsq, lsq_linear, minimize, Bounds, LinearConstraint
 from functools import partial
 
 from skimage.registration import phase_cross_correlation
+from skimage.filters.rank import threshold, median
+from skimage.morphology import square
+from sklearn.neighbors import KernelDensity
 from pystackreg import StackReg
+from itertools import chain
 
 from .lineshapes import (gaussian, lorentzian, voigt, pvoigt, moffat, pearson7,
                          breit_wigner, damped_oscillator, dho, logistic, lognormal,
                          students_t, expgaussian, donaich, skewed_gaussian,
-                         skewed_voigt, step, rectangle, exponential, powerlaw, 
-                         linear, parabolic, sine, expsine, split_lorentzian)
+                         skewed_voigt, step, rectangle, exponential, powerlaw,
+                         linear, parabolic, sine, expsine, split_lorentzian, polynd)
+
+from .misc import msgit
 
 
-functions = {'gaussian':gaussian, 'lorentzian':lorentzian, 'voigt':voigt, 
-             'pvoigt':pvoigt, 'moffat':moffat, 'pearson7':pearson7,
-             'breit_wigner':breit_wigner, 'damped_oscillator':damped_oscillator,
-             'dho':dho, 'logistic':logistic, 'lognormal':lognormal,
-             'students_t':students_t, 'expgaussian':expgaussian, 
-             'donaich':donaich, 'skewed_gaussian':skewed_gaussian,
-             'skewed_voigt':skewed_voigt, 'step':step, 'rectangle':rectangle, 
-             'exponential':exponential, 'powerlaw':powerlaw, 
-             'linear':linear, 'parabolic':parabolic, 'sine':sine, 
-             'expsine':expsine, 'split_lorentzian':split_lorentzian}
+functions = {'gaussian': gaussian, 'lorentzian': lorentzian, 'voigt': voigt,
+             'pvoigt': pvoigt, 'moffat': moffat, 'pearson7': pearson7,
+             'breit_wigner': breit_wigner, 'damped_oscillator': damped_oscillator,
+             'dho': dho, 'logistic': logistic, 'lognormal': lognormal,
+             'students_t': students_t, 'expgaussian': expgaussian,
+             'donaich': donaich, 'skewed_gaussian': skewed_gaussian,
+             'skewed_voigt': skewed_voigt, 'step': step, 'rectangle': rectangle,
+             'exponential': exponential, 'powerlaw': powerlaw,
+             'linear': linear, 'parabolic': parabolic, 'sine': sine,
+             'expsine': expsine, 'split_lorentzian': split_lorentzian,
+             'polynd': polynd}
 
-def fit_poly1d(x, y, order):
+N_CPU = os.cpu_count()-1
+
+
+def index_of(arr, e):
     """
-    inputs:
-        x:      ndarray in shape (1,), independent variable values
-        y:      ndarray in shape (1,), dependent variable values at x
-        order:  int, polynomial order
+    finding the element in arr that has value closes to e
 
-    returns: 
-        callable polynomial function with fitting coefficients of polynomial
+    Parameters
+    ----------
+    arr : 1D or 2D ndarray of size [NxM]
+        if arr is 1D it is a spectrum of N points
+        if arr is 2D, its column is the spectrum dimension (N) and row is the number of spectra dimension (M)
+        search is performed on each column.
+    e : float or 1D ndarray of size M; float corresponds to M=1
+        if e is 1D, its size equals to arr.shape[1]
+        target value to be compared.
+
+    Returns
+    -------
+    list
+        the indices of the elements closest to e in arr; has size of arr.shape[1]
+
     """
-    return np.poly1d(np.polyfit(x, y, order))
+    if len(arr.shape) == 1:
+        return np.argmin(abs(arr - e), axis=0)
+    elif len(arr.shape) == 2:
+        return np.argmin(abs(arr - e[np.newaxis, :]), axis=0)
 
-def fit_poly2d(x, y, order):
+
+def lookup(x, y, y0):
     """
-    inputs:
-        x:      ndarray in shape (n,), independent variable values
-        y:      ndarray in shape (n, k), multiple dependent variable value arries at x
-        order:  int, polynomial order
+    Find corresponding x according to y0 relative in y
 
-    return: 
-        ndarray: fitting coefficients of polynomial in shape (order+1, y.shape[1]) 
+    Parameters
+    ----------
+    x : 1D array-like of size N
+        corresponding energy points in the spectra
+    y : 2D array-like of size NxM
+        its column dimension is the spectrum dimension (N) and row dimension the sampling dimension (M)
+    y0 : 1D array-like of size M
+        specific values for each spectrum in y.
+
+    Returns
+    -------
+    float
+        x value corresponding to y0.
+
     """
-    return np.polyfit(x, y, order)
+    return x[:, np.newaxis][index_of(y, y0)]
 
-def fit_polynd(x, y, order):
+
+@msgit(wd=100, fill='-')
+def eval_polynd(p, x, reshape=None):
+    bdi = _chunking(p.shape[1])
+    with mp.Pool(N_CPU) as pool:
+        rlt = pool.map(partial(_polyval, x), [
+                       p[:, bdi[ii]:bdi[ii+1]] for ii in range(N_CPU)])
+    pool.close()
+    pool.join()
+    if reshape is None:
+        return np.vstack(list(chain(*rlt))).T
+    else:
+        return np.vstack(list(chain(*rlt))).T.reshape(reshape)
+
+
+def _polyval(x0, p0):
+    rlt = [np.polyval(p0[:, ii], x0) for ii in range(p0.shape[1])]
+    return rlt
+
+
+def _chunking(dim):
+    bdi = []
+    chunk = int(np.ceil(dim/N_CPU))
+    for ii in range(N_CPU+1):
+        bdi.append(ii*chunk)
+    bdi[-1] = min(dim, ii*chunk)
+    return bdi
+
+
+@msgit(wd=100, fill='-')
+def fit_curv_polynd(x, y, order):
     """
     inputs:
         x:      ndarray in shape (n,), independent variable values
         y:      ndarray in shape (n, ...), multiple dependent variable value arries at x
         order:  int, polynomial order
 
-    return: 
+    return:
         ndarray: fitting coefficients of polynomial in shape (order+1, y.shape[1:])
     """
-    s = list(y.shape)
-    s[0] = order + 1
-    print('fit_polynd is done')
-    return (np.polyfit(x, y.reshape([y.shape[0], -1]), order).astype(np.float32)).reshape(s)
+    y = y.reshape(y.shape[0], -1)
+    bdi = _chunking(y.shape[1])
+    with mp.Pool(N_CPU) as pool:
+        rlt = pool.map(partial(_polyfit, x, order, None, True), [
+                       y[:, bdi[ii]:bdi[ii+1]] for ii in range(N_CPU)])
+    pool.close()
+    pool.join()
 
-def index_of(arr, e):
-    """
-    finding the element in arr that has value closes to e
-    return: the indices of these elements in arr; return has shape of arr.shape[1:]
-    """
-    return np.argmin(abs(arr - e), axis=0)
+    rlt = np.array(rlt, dtype=object)
+    print(rlt.shape)
+    return [np.concatenate(rlt[:, 0], axis=1), np.concatenate(rlt[:, 1], axis=0), None, None]
+    # return [np.vstack(rlt[:, 0]).T, np.vstack(rlt[:, 1])]
 
-def index_lookup(us_idx, eng_list, ufac=10):
-    """
-    Find the table value with its upsampled index
-    upsample table's index and find the interpolated value in the table that
-    corresponds to the upsampled index idx
 
-    Parameters
-    ----------
-    us_idx : int
-        upsampled table index.
-    ref_list : 1-D array like
-        list that will be looked up.
-    ufac : int, optional
-        index's upsampling rator. The default is 100.
+def _polyfit(x0, order, rcond, full, y0):
+    rlt = np.polyfit(x0, y0, order, rcond=rcond, full=full)
+    return (rlt[0], rlt[1]/np.sum(y0**2))
 
-    Returns
-    -------
-    the table's value referred by the upsampled index idx
-
-    """
-    x = np.squeeze(eng_list[np.int_(np.floor(us_idx))]) + \
-        np.squeeze(eng_list[np.int_(np.ceil(us_idx))]-eng_list[np.int_(np.floor(us_idx))])*\
-            np.squeeze(us_idx - np.floor(us_idx))/np.squeeze(np.ceil(us_idx) - np.floor(us_idx))
-    return np.array(x).astype(np.float32)
 
 """
 below routines adopted from xraylarch and lmfit
@@ -120,44 +167,46 @@ lmfit/Model - > Models              Mininizer
                             |
                             v
 scipy.minimize    ->    fitting_tools
-np.linalg.minizer ->         
+np.linalg.minizer ->
 
 
 For linear combination fitting, scipy.linalg.lstsq is used to find the weight
-factors for a set of reference curves to fit a sample curve       
+factors for a set of reference curves to fit a sample curve
 """
 
-def fit_peak_scipy(eng, spec, model, fvars, bnds=None,
-                   ftol = 1e-7, xtol = 1e-7, gtol = 1e-7,
-                   jac = '3-point', method = 'trf'):
+
+@msgit(wd=100, fill='-')
+def fit_curv_scipy(x, y, model, fvars, bnds=None,
+                   ftol=1e-7, xtol=1e-7, gtol=1e-7,
+                   jac='3-point', method='trf'):
     """
     INPUTS:
         eng: 1-D array-like in shape (n,); energy point list around peak position
-        
+
         spec: float2D, 3D, or 3D np.array in form [spec_dim, space_dim]
-        
+
         model: lineshape name defined below
-        
+
         fvars: list; fitting variables of model function
-        
+
         bnds: bounding range of fitting variables
-        
+
         ftol: Tolerance for termination by the change of the cost function
-        
+
         xtol: Tolerance for termination by the change of the independent variables
-        
+
         gtol: Tolerance for termination by the norm of the gradient
-        jac: {‘2-point’, ‘3-point’, ‘cs’, callable}, optional; Method of 
-        computing the Jacobian matrix (an m-by-n matrix, where element (i, j) 
-        is the partial derivative of f[i] with respect to x[j]). The keywords 
-        select a finite difference scheme for numerical estimation. The scheme 
-        ‘3-point’ is more accurate, but requires twice as many operations as 
-        ‘2-point’ (default). The scheme ‘cs’ uses complex steps, and while 
-        potentially the most accurate, it is applicable only when fun correctly 
-        handles complex inputs and can be analytically continued to the complex 
-        plane. Method ‘lm’ always uses the ‘2-point’ scheme. If callable, it is 
-        used as jac(x, *args, **kwargs) and should return a good approximation 
-        (or the exact value) for the Jacobian as an array_like (np.atleast_2d 
+        jac: {‘2-point’, ‘3-point’, ‘cs’, callable}, optional; Method of
+        computing the Jacobian matrix (an m-by-n matrix, where element (i, j)
+        is the partial derivative of f[i] with respect to x[j]). The keywords
+        select a finite difference scheme for numerical estimation. The scheme
+        ‘3-point’ is more accurate, but requires twice as many operations as
+        ‘2-point’ (default). The scheme ‘cs’ uses complex steps, and while
+        potentially the most accurate, it is applicable only when fun correctly
+        handles complex inputs and can be analytically continued to the complex
+        plane. Method ‘lm’ always uses the ‘2-point’ scheme. If callable, it is
+        used as jac(x, *args, **kwargs) and should return a good approximation
+        (or the exact value) for the Jacobian as an array_like (np.atleast_2d
         is applied), a sparse matrix or a scipy.sparse.linalg.LinearOperator.
 
         method: {‘trf’, ‘dogbox’, ‘lm’}, optional
@@ -170,30 +219,30 @@ def fit_peak_scipy(eng, spec, model, fvars, bnds=None,
         fun: ndarray, shape (m,)
             Vector of residuals at the solution.
         jac: ndarray, sparse matrix or LinearOperator, shape (m, n)
-            Modified Jacobian matrix at the solution, in the sense that J^T J 
-            is a Gauss-Newton approximation of the Hessian of the cost function. 
+            Modified Jacobian matrix at the solution, in the sense that J^T J
+            is a Gauss-Newton approximation of the Hessian of the cost function.
             The type is the same as the one used by the algorithm.
         grad: ndarray, shape (m,)
             Gradient of the cost function at the solution.
         optimality: float
-            First-order optimality measure. In unconstrained problems, it is 
-            always the uniform norm of the gradient. In constrained problems, 
+            First-order optimality measure. In unconstrained problems, it is
+            always the uniform norm of the gradient. In constrained problems,
             it is the quantity which was compared with gtol during iterations.
         active_mask: ndarray of int, shape (n,)
-            Each component shows whether a corresponding constraint is active 
+            Each component shows whether a corresponding constraint is active
             (that is, whether a variable is at the bound):
             0 : a constraint is not active.
             -1 : a lower bound is active.
             1 : an upper bound is active.
-            Might be somewhat arbitrary for ‘trf’ method as it generates a 
-            sequence of strictly feasible iterates and active_mask is 
+            Might be somewhat arbitrary for ‘trf’ method as it generates a
+            sequence of strictly feasible iterates and active_mask is
             determined within a tolerance threshold.
         nfev: int
-            Number of function evaluations done. Methods ‘trf’ and ‘dogbox’ do 
-            not count function calls for numerical Jacobian approximation, as 
+            Number of function evaluations done. Methods ‘trf’ and ‘dogbox’ do
+            not count function calls for numerical Jacobian approximation, as
             opposed to ‘lm’ method.
         njev: int or None
-            Number of Jacobian evaluations done. If numerical Jacobian 
+            Number of Jacobian evaluations done. If numerical Jacobian
             approximation is used in ‘lm’ method, it is set to None.
         status: int
             The reason for algorithm termination:
@@ -208,16 +257,16 @@ def fit_peak_scipy(eng, spec, model, fvars, bnds=None,
         success: bool
             True if one of the convergence criteria is satisfied (status > 0).
 
-        
+
     lineshpaes are inherited from lmfit.
-    
+
     2-parameter functions:
         {'exponential', 'powerlaw', 'linear', 'parabolic'}
     exponential(x, amplitude=1, decay=1)
     powerlaw(x, amplitude=1, exponent=1.0)
     linear(x, slope=1.0, intercept=0.0)
     parabolic(x, a=0.0, b=0.0, c=0.0)
-    
+
     3-parameter functions:
         {'gaussian', 'lorentzian', 'damped_oscillator',
          'logistic', 'lognormal', 'students_t', 'sine'}
@@ -228,7 +277,7 @@ def fit_peak_scipy(eng, spec, model, fvars, bnds=None,
     lognormal(x, amplitude=1.0, center=0., sigma=1)
     students_t(x, amplitude=1.0, center=0.0, sigma=1.0)
     sine(x, amplitude=1.0, frequency=1.0, shift=0.0)
-    
+
     4-parameter functions:
         {'split_lorentzian', 'voigt', 'pvoigt', 'moffat',
          'pearson7', 'breit_wigner', 'dho', 'expgaussian',
@@ -245,11 +294,11 @@ def fit_peak_scipy(eng, spec, model, fvars, bnds=None,
     skewed_gaussian(x, amplitude=1.0, center=0.0, sigma=1.0, gamma=0.0)
     expsine(x, amplitude=1.0, frequency=1.0, shift=0.0, decay=0.0)
     step(x, amplitude=1.0, center=0.0, sigma=1.0, form='linear')
-    
+
     5-parameter functions:
         {'skewed_voigt'}
     skewed_voigt(x, amplitude=1.0, center=0.0, sigma=1.0, gamma=None, skew=0.0)
-    
+
     6-parameter functions:
         {'rectangle'}
     rectangle(x, amplitude=1.0, center1=0.0, sigma1=1.0,
@@ -257,560 +306,484 @@ def fit_peak_scipy(eng, spec, model, fvars, bnds=None,
     """
     func = functions[model]
     if len(fvars) == 2:
-        def _f(fvars, func, x, y):
-            return (func(x, fvars[0], fvars[1]) - y)
+        def _f(fvar, fun, x0, y0):
+            return (fun(x0, fvar[0], fvar[1]) - y0)
     elif len(fvars) == 3:
-        def _f(fvars, func, x, y):
-            return (func(x, fvars[0], fvars[1], fvars[2]) - y)
+        def _f(fvar, fun, x0, y0):
+            return (fun(x0, fvar[0], fvar[1], fvar[2]) - y0)
     elif len(fvars) == 4:
-        def _f(fvars, func, x, y):
-            return (func(x, fvars[0], fvars[1], fvars[2], fvars[3]) - y)
+        def _f(fvar, fun, x0, y0):
+            return (fun(x0, fvar[0], fvar[1], fvar[2], fvar[3]) - y0)
     elif len(fvars) == 5:
-        def _f(fvars, func, x, y):
-            return (func(x, fvars[0], fvars[1], fvars[2], fvars[3], fvars[4]) - y)
+        def _f(fvar, fun, x0, y0):
+            return (fun(x0, fvar[0], fvar[1], fvar[2], fvar[3], fvar[4]) - y0)
     elif len(fvars) == 6:
-        def _f(fvars, func, x, y):
-            return (func(x, fvars[0], fvars[1], fvars[2], fvars[3], fvars[4], fvars[5]) - y)
+        def _f(fvar, fun, x0, y0):
+            return (fun(x0, fvar[0], fvar[1], fvar[2], fvar[3], fvar[4], fvar[5]) - y0)
     else:
         return None
-       
-    def _my_lsq(f, fvars, func, x, y, jac, bnds, method, ftol, xtol, gtol):
-        return lsq(f, fvars, jac=jac, bounds=bnds, method=method, ftol=ftol, xtol=xtol, gtol=gtol, args=(func, x, y)).x
 
-    dim = spec.shape    
+    dim = y.reshape([y.shape[0], -1]).shape[1]
     if bnds is None:
-        bnds = ((-np.inf, eng[0], 0.01), (np.inf, eng[-1], 100))
-    
-    print(time.asctime())    
-    n_cpu = os.cpu_count()
-    with mp.Pool(n_cpu - 1) as pool:
-        rlt = pool.starmap(_my_lsq, [(_f, fvars, func, eng, spec[:, ii], jac, bnds, method, ftol, xtol, gtol) for ii in np.int32(np.arange(dim[1]))])
-    pool.close()
-    pool.join()    
-    print(time.asctime())
-    print('fit_peak_scipy is done')
-    return np.array(rlt).astype(np.float32)
+        bnds = ((-np.inf, x[0], 0.01), (np.inf, x[-1], 100))
 
-def find_edge_0p5_map_direct(spec):
+    with mp.Pool(N_CPU) as pool:
+        rlt = pool.map(partial(_lsq, _f, fvars, func, x, jac, bnds, method, ftol, xtol, gtol), [
+                       y.reshape([y.shape[0], -1])[:, ii] for ii in range(dim)])
+    pool.close()
+    pool.join()
+    rlt = np.array(rlt, dtype=object)
+    return [np.vstack(rlt[:, 0]).T, np.vstack(rlt[:, 1]), np.vstack(rlt[:, 2]), np.vstack(rlt[:, 3])]
+
+
+def _lsq(f, fvar, fun, x0, jac, bnds, method, ftol, xtol, gtol, y0):
+    rlt = lsq(f, fvar, jac=jac, bounds=bnds, method=method,
+              ftol=ftol, xtol=xtol, gtol=gtol, args=(fun, x0, y0))
+    return (rlt.x.astype(np.float32), rlt.cost/np.sum(y0**2), rlt.status, np.int8(rlt.success))
+
+
+@msgit(wd=100, fill='-')
+def find_raw_val(spec, val=0.5):
     """
-    inputs: 
+    inputs:
         peak_fit_coef: array-like; pixel-wise peak fitting coefficients
         eng: array-like; dense energy point list around the peak
     returns:
         ndarray: pixel-wise edge=0.5 position map
     """
-    try:
-        a = np.take_along_axis(spec, np.expand_dims(np.argmin(np.abs(spec-0.5), axis=0), axis=0), axis=0)
-        print('find_fit_edge_0p5_map_poly is done')
-        return a
-    except:
-        print('Something wrong in find_edge_0p5_map_direct')
-        return -1
+    return spec[np.argmin(np.abs(spec-val), axis=0)]
 
-def find_deriv_peak_map_poly(peak_fit_coef, idx):
-    """
-    inputs: 
-        peak_fit_coef: array-like; pixel-wise peak fitting coefficients
-        eng: array-like; dense energy point list around the peak
-    returns:
-        ndarray: pixel-wise peak position map
-    """
-    try:
-        order = peak_fit_coef.shape[0]
-        a = 0
-        for ii in range(order):
-            a += peak_fit_coef[ii]*(idx**(order-ii-1)) 
-        b = np.take_along_axis(idx, np.expand_dims(np.argmax(np.gradient(a, axis=0)/
-                              np.gradient(idx, axis=0), axis=0), axis=0), axis=0)
-        print('find_deriv_peak_map_poly is done')
-        return b .astype(np.float32)       
-    except:
-        print('Something wrong in find_deriv_peak_map_poly')
-        return -1    
 
-def find_fit_edge_0p5_map_poly(edge_fit_coef, idx):
-    """
-    inputs: 
-        peak_fit_coef: array-like; pixel-wise peak fitting coefficients
-        eng: array-like; dense energy point list around the peak
-    returns:
-        ndarray: pixel-wise peak position map
-    """
-    try:
-        order = edge_fit_coef.shape[0]
-        a = 0
-        for ii in range(order):
-            a += edge_fit_coef[ii]*(idx**(order-ii-1)) 
-        b = np.take_along_axis(idx, np.expand_dims(np.argmin(np.abs(a-0.5), axis=0), axis=0), axis=0)
-        print('find_fit_edge_0p5_map_poly is done')        
-        return b.astype(np.float32)       
-    except:
-        print('Something wrong in find_fit_edge_0p5_map_poly')
-        return -1
+# @msgit(wd=100, fill='-')
+# def find_deriv_peak_poly(p, x):
+#     """
+#     inputs:
+#         :param p: array-like; spec array
+#         :param x: array-like; energy point list around the peak
+#     returns:
+#         ndarray: pixel-wise peak position map
+#     """
+#     x_grad = np.gradient(x, axis=0)
+#     bdi = _chunking(p.shape[1])
+#     with mp.Pool(N_CPU) as pool:
+#         rlt = pool.map(partial(_max_poly_grad, x, x_grad), [
+#                        p[:, bdi[ii]:bdi[ii+1]] for ii in range(N_CPU)])
+#     pool.close()
+#     pool.join()
+#     return np.vstack(list(chain(*rlt))).astype(np.float32)
+#
+#
+# def _max_poly_grad(x0, xg, coef):
+#     rlt0 = []
+#     for ii in range(coef.shape[1]):
+#         c = np.polyval(coef[:, ii], x0)
+#         rlt0.append([x0[np.argmax(np.gradient(c, axis=0)/xg, axis=0)]])
+#     return rlt0
 
-def find_fit_peak_map_poly(peak_fit_coef, idx):
-    try:
-        order = peak_fit_coef.shape[0]
-        a = 0
-        for ii in range(order):
-            a += peak_fit_coef[ii]*(idx**(order-ii-1)) 
-        b = np.take_along_axis(idx, np.expand_dims(np.argmax(a, axis=0), axis=0), axis=0)
-        print('find_fit_peak_map_poly is done')
-        return b.astype(np.float32)
-    except:
-        print('Something wroing in find_fit_peak_map_poly')
-        return -1    
 
-def find_deriv_peak_map_scipy(model, eng, peak_fit_coef):
-    """
-    inputs: 
-        model: string; line shape function name in 'functions' 
-        eng: array-like; dense energy point list around the peak
-        peak_fit_coef: array-like; pixel-wise peak fitting coefficients
-    returns:
-        ndarray: pixel-wise peak position map
-    """
-    func = functions[model]
-    fvars = peak_fit_coef[0]
-    if len(fvars) == 2:
-        def _max_grad(func, x, fvars):
-            return x[np.argmax(np.gradient(func(x, fvars[0], fvars[1]))/
-                               np.gradient(eng))]
-    elif len(fvars) == 3:
-        def _max_grad(func, x, fvars):
-            return x[np.argmax(np.gradient(func(x, fvars[0], fvars[1], fvars[2]))/
-                               np.gradient(eng))]
-    elif len(fvars) == 4:
-        def _max_grad(func, x, fvars):
-            return x[np.argmax(np.gradient(func(x, fvars[0], fvars[1], fvars[2], fvars[3]))/
-                               np.gradient(eng))]
-    elif len(fvars) == 5:
-        def _max_grad(func, x, fvars):
-            return x[np.argmax(np.gradient(func(x, fvars[0], fvars[1], fvars[2], fvars[3], fvars[4]))/
-                               np.gradient(eng))]
-    elif len(fvars) == 6:
-        def _max_grad(func, x, fvars):
-            return x[np.argmax(np.gradient(func(x, fvars[0], fvars[1], fvars[2], fvars[3], fvars[4], fvars[5]))/
-                               np.gradient(eng))]
-    else:
-        return None
+# @msgit(wd=100, fill='-')
+# def find_fit_val_poly(p, x, v=0.5):
+#     """
+#     Find the indices to 'x' where the N polynomials have values closest to the
+#     target value 'v'
+#
+#     Parameters
+#     ----------
+#     p : MxN array; polynomial coefficients; M: polynomial order + 1, N: number
+#         of fitting points.
+#     x : locations where polynomial values are calculated.
+#     v : float, optional
+#         target value. The default is 0.5.
+#
+#     Returns
+#     -------
+#     array of size N
+#         the indices to 'x' where the N polynomials have values closest to the
+#         target value 'v'.
+#
+#     """
+#     bdi = _chunking(p.shape[1])
+#     with mp.Pool(N_CPU) as pool:
+#         rlt = pool.map(partial(_find_poly_v, x, v), [
+#                        p[:, bdi[ii]:bdi[ii+1]] for ii in range(N_CPU)])
+#     pool.close()
+#     pool.join()
+#     return np.vstack(list(chain(*rlt))).astype(np.float32)
+#
+#
+# def _find_poly_v(x0, v0, coef):
+#     rlt0 = []
+#     for ii in range(coef.shape[1]):
+#         cur = np.polyval(coef[:, ii], x0)
+#         rlt0.append(x0[np.argmin(np.abs(cur-v0), axis=0)])
+#     return rlt0
 
-    n_cpu = os.cpu_count()
-    print(time.asctime())
-    with mp.Pool(n_cpu-1) as pool:
-        derivs = pool.starmap(_max_grad, [(func, eng, peak_fit_coef[ii]) for ii in np.int32(np.arange(len(peak_fit_coef)))])
-    pool.close()
-    pool.join()
-    print(time.asctime())
-    print('find_deriv_peak_map_scipy is done')
-    return np.array(derivs).astype(np.float32)
 
-def find_fit_edge_0p5_map_scipy(model, peak_fit_coef, eng):
-    """
-    inputs: 
-        model: string; line shape function name in 'functions' 
-        eng: array-like; dense energy point list around the peak
-        peak_fit_coef: array-like; pixel-wise peak fitting coefficients
-    returns:
-        ndarray: pixel-wise peak position map
-    """
-    func = functions[model]
-    fvars = peak_fit_coef[0]
-    if len(fvars) == 2:
-        def _max_grad(func, x, fvars):
-            return x[np.argmin(np.abs(func(x, fvars[0], fvars[1])-0.5))]
-    elif len(fvars) == 3:
-        def _max_grad(func, x, fvars):
-            return x[np.argmin(np.abs(func(x, fvars[0], fvars[1], fvars[2])-0.5))]
-    elif len(fvars) == 4:
-        def _max_grad(func, x, fvars):
-            return x[np.argmin(np.abs(func(x, fvars[0], fvars[1], fvars[2], fvars[3])-0.5))]
-    elif len(fvars) == 5:
-        def _max_grad(func, x, fvars):
-            return x[np.argmin(np.abs(func(x, fvars[0], fvars[1], fvars[2], fvars[3], fvars[4])-0.5))]
-    elif len(fvars) == 6:
-        def _max_grad(func, x, fvars):
-            return x[np.argmin(np.abs(func(x, fvars[0], fvars[1], fvars[2], fvars[3], fvars[4], fvars[5])-0.5))]
-    else:
-        return None
+# @msgit(wd=100, fill='-')
+# def find_fit_peak_poly(p, x):
+#     """
+#     :param p: array-like; spec array
+#     :param x: array-like; energy point list around the peak
+#     :return:
+#     """
+#     bdi = _chunking(p.shape[1])
+#     with mp.Pool(N_CPU) as pool:
+#         rlt = pool.map(partial(_find_poly_peak, x), [
+#                        p[:, bdi[ii]:bdi[ii+1]] for ii in range(N_CPU)])
+#     pool.close()
+#     pool.join()
+#     return np.vstack(list(chain(*rlt))).astype(np.float32)
+#
+#
+# def _find_poly_peak(x0, coef):
+#     rlt0 = []
+#     for ii in range(coef.shape[1]):
+#         c = np.polyval(coef[:, ii], x0)
+#         rlt0.append(x0[np.argmax(c)])
+#     return rlt0
 
-    n_cpu = os.cpu_count()
-    print(time.asctime())
-    with mp.Pool(n_cpu-1) as pool:
-        edge_0p5 = pool.starmap(_max_grad, [(func, eng, peak_fit_coef[ii]) for ii in np.int32(np.arange(len(peak_fit_coef)))])
-    pool.close()
-    pool.join()
-    print(time.asctime())
-    print('find_fit_edge_0p5_map_scipy is done')
-    return np.array(edge_0p5).astype(np.float32)
 
-def find_fit_peak_map_scipy(model, eng, peak_fit_coef):
+# @msgit(wd=100, fill='-')
+# def find_deriv_peak_scipy(model, p, x):
+#     """
+#     inputs:
+#         model: string; line shape function name in 'functions'
+#         p: array-like; spec array
+#         x: array-like; energy point list around the peak
+#     returns:
+#         ndarray: pixel-wise peak position map
+#     """
+#     func = functions[model]
+#     bdi = _chunking(p.shape[1])
+#     with mp.Pool(N_CPU) as pool:
+#         rlt = pool.map(partial(_max_fun_grad, func, x), [
+#                        p[:, bdi[ii]:bdi[ii+1]] for ii in range(N_CPU)])
+#     pool.close()
+#     pool.join()
+#     return np.vstack(list(chain(*rlt))).astype(np.float32)
+
+
+@msgit(wd=100, fill='-')
+def find_deriv_peak(model, p, x):
     """
-    inputs: 
-        model: string; line shape function name in 'functions' 
-        eng: array-like; dense energy point list around the peak
-        peak_fit_coef: array-like; pixel-wise peak fitting coefficients
+    inputs:
+        model: string; line shape function name in 'functions'
+        p: array-like; spec array
+        x: array-like; energy point list around the peak
     returns:
         ndarray: pixel-wise peak position map
     """
     func = functions[model]
-    fvars = peak_fit_coef[0]
-    if len(fvars) == 2:
-        def _find_peak(func, x, fvars):
-            return x[np.argmax(func(x, fvars[0], fvars[1]))]
-    elif len(fvars) == 3:
-        def _find_peak(func, x, fvars):
-            return x[np.argmax(func(x, fvars[0], fvars[1], fvars[2]))]
-    elif len(fvars) == 4:
-        def _find_peak(func, x, fvars):
-            return x[np.argmax(func(x, fvars[0], fvars[1], fvars[2], fvars[3]))]
-    elif len(fvars) == 5:
-        def _find_peak(func, x, fvars):
-            return x[np.argmax(func(x, fvars[0], fvars[1], fvars[2], fvars[3], fvars[4]))]
-    elif len(fvars) == 6:
-        def _find_peak(func, x, fvars):
-            return x[np.argmax(func(x, fvars[0], fvars[1], fvars[2], fvars[3], fvars[4], fvars[5]))]
-    else:
-        return None
-
-    n_cpu = os.cpu_count()
-    print(time.asctime())
-    with mp.Pool(n_cpu-1) as pool:
-        peaks = pool.starmap(_find_peak, [(func, eng, peak_fit_coef[ii]) for ii in np.int32(np.arange(len(peak_fit_coef)))])
+    bdi = _chunking(p.shape[1])
+    with mp.Pool(N_CPU) as pool:
+        rlt = pool.map(partial(_max_fun_grad, func, x), [
+                       p[:, bdi[ii]:bdi[ii+1]] for ii in range(N_CPU)])
     pool.close()
     pool.join()
-    print(time.asctime())
-    print('find_fit_peak_map_scipy is done')
-    return np.array(peaks).astype(np.float32)
+    return np.vstack(list(chain(*rlt))).astype(np.float32)
 
-def tv_l1_pixel(fixed_img, img, mask, shift, filt=True):
-    if filt:
-        diff_img = gf(fixed_img, 3) - gf(np.roll(img, shift, axis=[0, 1]), 3)
-        return ((np.abs(np.diff(diff_img, axis=0, prepend=1))+np.abs(np.diff(diff_img, axis=1, prepend=1)))*mask).sum()
-    else:
-        diff_img = fixed_img - np.roll(img, shift, axis=[0, 1])
-        return ((np.abs(np.diff(diff_img, axis=0, prepend=1))+np.abs(np.diff(diff_img, axis=1, prepend=1)))*mask).sum()
 
-def tv_l2_pixel(fixed_img, img, mask, shift, norm=True):
-    if norm:
-        diff_img = fixed_img - np.roll(img, shift, axis=[0, 1])
-        diff_img /= np.sqrt((diff_img**2).sum())
-    else:
-        diff_img = fixed_img - np.roll(img, shift, axis=[0, 1])        
-    return (((np.diff(diff_img, axis=0, prepend=1))**2+(np.diff(diff_img, axis=1, prepend=1))**2)*mask).sum() 
+# def _max_fun_grad(f, x0, fvars):
+#     rlt0 = []
+#     x_grad = np.gradient(x0)
+#
+#     for ii in range(fvars.shape[1]):
+#         rlt0.append(x0[np.argmax(np.gradient(f(x0, *fvars[:, ii]))/x_grad)])
+#     return rlt0
 
-def tv_l1_subpixel(fixed_img, img, mask, shift, filt=True):
-    if filt:
-        diff_img = gf(fixed_img, 3) - gf(np.real(np.fft.ifftn(fourier_shift(np.fft.fftn(img), shift))), 3)
-        return ((np.abs(np.diff(diff_img, axis=0, prepend=1))+np.abs(np.diff(diff_img, axis=1, prepend=1)))*mask).sum()
-    else:
-        diff_img = fixed_img - np.real(np.fft.ifftn(fourier_shift(np.fft.fftn(img), shift)))
-        return ((np.abs(np.diff(diff_img, axis=0, prepend=1))+np.abs(np.diff(diff_img, axis=1, prepend=1)))*mask).sum()
 
-def tv_l2_subpixel(fixed_img, img, mask, shift, norm=True):
-    if norm:
-        diff_img = fixed_img - np.real(np.fft.ifftn(fourier_shift(np.fft.fftn(img), shift)))
-        diff_img /= np.sqrt((diff_img**2).sum())
-    else:
-        diff_img = fixed_img - np.real(np.fft.ifftn(fourier_shift(np.fft.fftn(img), shift)))
-    return (((np.diff(diff_img, axis=0, prepend=1))**2+(np.diff(diff_img, axis=1, prepend=1))**2)*mask).sum()
+def _max_fun_grad(f, x0, fvars):
+    rlt0 = []
+    x_grad = np.gradient(x0)
+    for ii in range(fvars.shape[1]):
+        dmu = np.gradient(f(x0, *fvars[:, ii])) / x_grad
+        nmin = max(3, int(len(dmu) * 0.05))
+        maxdmu = max(dmu[nmin:-nmin])
+        high_deriv_pts = np.where(dmu > maxdmu * 0.1)[0]
+        idmu_max, dmu_max = 0, 0
+        for i in high_deriv_pts:
+            if i < nmin or i > len(x0) - nmin:
+                continue
+            if (dmu[i] > dmu_max and
+                    (i + 1 in high_deriv_pts) and
+                    (i - 1 in high_deriv_pts)):
+                idmu_max, dmu_max = i, dmu[i]
+        rlt0.append(x0[idmu_max])
+    return rlt0
 
-def mrtv_reg1(fixed_img, img, levs=4, wz=10, sp_wz=20, sp_step=0.2):
-    wz = int(wz)
-    sch_config = {}
-    sch_config[levs-1] = {'wz':sp_wz, 'step':sp_step}
-    tv1_pxl = {}
-    tv1_pxl_id = np.zeros(levs, dtype=np.int16)
-    shift = np.zeros([levs, 2], dtype=np.float32)
-    rlt = []
-    
-    for ii in range(levs-1):
-        sch_config[levs-2-ii] = {'wz':wz, 'step':int(2**ii)}
-    
-    border_wz = sch_config[0]['wz']*sch_config[0]['step']
-    if ((np.array(fixed_img.shape) - border_wz) <= 0).any():
-        return -1
-    
-    mask = np.zeros(fixed_img.shape)
-    mask[int(border_wz/2):-int(border_wz/2), int(border_wz/2):-int(border_wz/2)] = 1
-        
-    n_cpu = os.cpu_count()    
-    for ii in range(levs-1): 
-        w = sch_config[ii]['wz']
-        step = sch_config[ii]['step']
-        with mp.get_context('spawn').Pool(int(n_cpu-1)) as pool:
-            rlt = pool.map(partial(tv_l1_pixel, fixed_img, img, mask), 
-                           [[int(step*(jj//w-int(w/2))+shift[:ii, 0].sum()), 
-                             int(step*(jj%w-int(w/2))+shift[:ii, 1].sum())] for jj in np.int32(np.arange(w**2))])
+
+# @msgit(wd=100, fill='-')
+# def find_fit_val_scipy(model, p, x, v=0.5):
+#     """
+#     inputs:
+#         model: string; line shape function name in 'functions'
+#         p: array-like; spec array
+#         x: array-like; energy point list around the peak
+#     returns:
+#         ndarray: pixel-wise peak position map
+#     """
+#     func = functions[model]
+#     bdi = _chunking(p.shape[1])
+#     with mp.Pool(N_CPU) as pool:
+#         rlt = pool.map(partial(_find_fun_v, func, x, v), [
+#                        p[:, bdi[ii]:bdi[ii+1]] for ii in range(N_CPU)])
+#     pool.close()
+#     pool.join()
+#     return np.vstack(list(chain(*rlt))).astype(np.float32)
+
+
+@msgit(wd=100, fill='-')
+def find_fit_val(model, p, x, v=0.5):
+    """
+    inputs:
+        model: string; line shape function name in 'functions'
+        p: array-like; spec array
+        x: array-like; energy point list around the peak
+    returns:
+        ndarray: pixel-wise peak position map
+    """
+    func = functions[model]
+    bdi = _chunking(p.shape[1])
+    with mp.Pool(N_CPU) as pool:
+        rlt = pool.map(partial(_find_fun_v, func, x, v), [
+                       p[:, bdi[ii]:bdi[ii+1]] for ii in range(N_CPU)])
+    pool.close()
+    pool.join()
+    return np.vstack(list(chain(*rlt))).astype(np.float32)
+
+
+def _find_fun_v(f, x0, v0, fvars):
+    rlt0 = []
+    for ii in range(fvars.shape[1]):
+        rlt0.append(x0[np.argmin(np.abs(f(x0, *fvars[:, ii])-v0))])
+    return rlt0
+
+
+# @msgit(wd=100, fill='-')
+# def find_fit_peak_scipy(model, p, x):
+#     """
+#     inputs:
+#         model: string; line shape function name in 'functions'
+#         p: array-like; spec array
+#         x: array-like; energy point list around the peak
+#     returns:
+#         ndarray: pixel-wise peak position map
+#     """
+#     func = functions[model]
+#     bdi = _chunking(p.shape[1])
+#     with mp.Pool(N_CPU) as pool:
+#         rlt = pool.map(partial(_find_fun_peak, func, x), [
+#                        p[:, bdi[ii]:bdi[ii+1]] for ii in range(N_CPU)])
+#     pool.close()
+#     pool.join()
+#     return np.vstack(list(chain(*rlt))).astype(np.float32)
+
+
+@msgit(wd=100, fill='-')
+def find_fit_peak(model, p, x):
+    """
+    inputs:
+        model: string; line shape function name in 'functions'
+        p: array-like; spec array
+        x: array-like; energy point list around the peak
+    returns:
+        ndarray: pixel-wise peak position map
+    """
+    func = functions[model]
+    bdi = _chunking(p.shape[1])
+    with mp.Pool(N_CPU) as pool:
+        rlt = pool.map(partial(_find_fun_peak, func, x), [
+                       p[:, bdi[ii]:bdi[ii+1]] for ii in range(N_CPU)])
+    pool.close()
+    pool.join()
+    return np.vstack(list(chain(*rlt))).astype(np.float32)
+
+
+def _find_fun_peak(f, x0, fvars):
+    rlt0 = []
+    for ii in range(fvars.shape[1]):
+        rlt0.append(x0[np.argmax(f(x0, *fvars[:, ii]))])
+    return rlt0
+
+
+@msgit(wd=100, fill='-')
+def find_50_peak(model_e, x_e, p_e, model_p, x_p, p_p, ftype='both'):
+    """ find energy where model_e's value is 50% of the maximum of model_p
+    inputs:
+        model_e: string; line shape function name in 'functions' for edge fitting
+        x_e: array-like; energy point list for edge fitting
+        model_p: string; line shape function name in 'functions' for peak fitting
+        x_p: array-like; energy point list for peak fitting
+        p: [2 x N] array-like; p[0]: edge fitting function arguments
+                               p[1]: peak fitting function arguments
+    returns:
+        ndarray: pixel-wise peak position map
+    """
+    if ftype == 'both':
+        func_e = functions[model_e]
+        func_p = functions[model_p]
+        bdi = _chunking(len(p_e[0]))
+        # print(f'{x_e.shape=}, {x_p.shape=}')
+        # print(f'{p_e.shape=}, {p_p.shape=}')
+        # print(f'{p_e[:, 0]=}')
+        # print(f'{model_e=}, {model_p=}')
+        with mp.Pool(N_CPU) as pool:
+            rlt = pool.map(partial(_find_50_peak_fit_both, func_e, x_e, func_p, x_p), [
+                           [p_e[:, bdi[ii]:bdi[ii+1]], p_p[:, bdi[ii]:bdi[ii+1]]] for ii in range(N_CPU)])
         pool.close()
         pool.join()
-
-        tem = np.ndarray([w, w], dtype=np.float32)
-        for kk in range(w**2):
-            tem[kk//w, kk%w] = rlt[kk]
-        del(rlt)
-        gc.collect()
-        
-        tv1_pxl[ii] = np.array(tem)
-        tv1_pxl_id[ii] = tv1_pxl[ii].argmin()
-        shift[ii, 0] = step*(tv1_pxl_id[ii]//w-int(w/2))
-        shift[ii, 1] = step*(tv1_pxl_id[ii]%w-int(w/2))
-    
-    w = sch_config[levs-1]['wz']
-    step = sch_config[levs-1]['step']
-    with mp.get_context('spawn').Pool(int(n_cpu-1)) as pool:
-        rlt = pool.map(partial(tv_l1_subpixel, fixed_img, img, mask), 
-                       [[step*(jj//w-int(w/2))+shift[:(levs-1), 0].sum(), 
-                         step*(jj%w-int(w/2))+shift[:(levs-1), 1].sum()] for jj in np.int32(np.arange(w**2))])
-    pool.close() 
-    pool.join()
-    
-    tem = np.ndarray([w, w], dtype=np.float32)
-    for kk in range(w**2):
-        tem[kk//w, kk%w] = rlt[kk]
-    del(rlt)
-    gc.collect()
-    
-    tv1_pxl[levs-1] = np.array(tem)
-    tv1_pxl_id[levs-1] = tv1_pxl[levs-1].argmin()
-    shift[levs-1, 0] = step*(tv1_pxl_id[levs-1]//w-int(w/2))
-    shift[levs-1, 1] = step*(tv1_pxl_id[levs-1]%w-int(w/2))
-    
-    print(time.asctime())     
-    return tv1_pxl, tv1_pxl_id, shift, shift.sum(axis=0)
-
-def mrtv_reg2(fixed_img, img, levs=4, wz=10, sp_wz=20, sp_step=0.2, ps=None):
-    if ps is not None:
-        img[:] = np.real(np.fft.ifftn(fourier_shift(np.fft.fftn(img), ps)))[:]
-    wz = int(wz)
-    sch_config = {}
-    sch_config[levs-1] = {'wz':sp_wz, 'step':sp_step}
-    tv1_pxl = {}
-    tv1_pxl_id = np.zeros(levs, dtype=np.int16)
-    shift = np.zeros([levs, 2], dtype=np.float32)
-    rlt = []
-    
-    for ii in range(levs-1):
-        sch_config[levs-2-ii] = {'wz':6, 'step':0.5**ii}
-    sch_config[0] = {'wz':wz, 'step':0.5**(levs-2)}
-
-    if ((np.array(fixed_img.shape)*0.5**(levs-2) - wz) <= 0).any():
-        return -1
-    
-    n_cpu = os.cpu_count()
-    for ii in range(levs-1): 
-        w = sch_config[ii]['wz']
-        step = sch_config[ii]['step']
-        f = zoom(fixed_img, step)
-        m = zoom(img, step)
-        mk = np.zeros(m.shape, dtype=np.int8)
-        mk[int(wz*2**(ii-1)):-int(wz*2**(ii-1)), int(wz*2**(ii-1)):-int(wz*2**(ii-1))] = 1
-        
-        s = np.array([0, 0])
-        for kk in range(ii):
-            s = s + shift[kk]*2**(ii-kk)
-        with mp.get_context('spawn').Pool(int(n_cpu-1)) as pool:
-            rlt = pool.map(partial(tv_l1_pixel, f, m, mk), 
-                           [[int((jj//w-int(w/2))+s[0]), 
-                             int((jj%w-int(w/2))+s[1])] for jj in np.int32(np.arange(w**2))])
+        return np.vstack(list(chain(*rlt))).astype(np.float32)
+    elif ftype == 'wl':
+        # x_e: coordinate where (model_e, p_e) to be interpolated
+        # model_e: independent variable (energy points in a measured spectrum)
+        # p_e: dependent variable (chi at each energy point in a measured spectrum)
+        func_p = functions[model_p]
+        bdi = _chunking(len(p_e[0]))
+        with mp.Pool(N_CPU) as pool:
+            rlt = pool.map(partial(_find_50_peak_fit_wl, model_e, x_e, func_p, x_p), [
+                           [p_e[:, bdi[ii]:bdi[ii + 1]], p_p[:, bdi[ii]:bdi[ii + 1]]] for ii in range(N_CPU)])
         pool.close()
         pool.join()
+        return np.vstack(list(chain(*rlt))).astype(np.float32)
+    elif ftype == 'edge':
+        # x_p: coordinate where (model_e, p_e) to be interpolated
+        # model_p: independent variable (energy points in a measured spectrum)
+        # p_p: dependent variable (chi at each energy point in a measured spectrum)
+        func_e = functions[model_e]
+        bdi = _chunking(len(p_e[0]))
+        with mp.Pool(N_CPU) as pool:
+            rlt = pool.map(partial(_find_50_peak_fit_edge, func_e, x_e, model_p, x_p), [
+                           [p_e[:, bdi[ii]:bdi[ii + 1]], p_p[:, bdi[ii]:bdi[ii + 1]]] for ii in range(N_CPU)])
+        pool.close()
+        pool.join()
+        return np.vstack(list(chain(*rlt))).astype(np.float32)
+    elif ftype == 'none':
+        # model_e: coordinate where (model_e, p_e) to be interpolated
+        # x_e: independent variable (energy points in a measured spectrum)
+        # p_e: dependent variable (chi at each energy point in a measured spectrum)
+        # model_p: coordinate where (model_e, p_e) to be interpolated
+        # x_p: independent variable (energy points in a measured spectrum)
+        # p_p: dependent variable (chi at each energy point in a measured spectrum)
+        bdi = _chunking(len(p_e[0]))
+        with mp.Pool(N_CPU) as pool:
+            rlt = pool.map(partial(_find_50_peak_fit_none, model_e, x_e, model_p, x_p), [
+                           [p_e[:, bdi[ii]:bdi[ii + 1]], p_p[:, bdi[ii]:bdi[ii + 1]]] for ii in range(N_CPU)])
+        pool.close()
+        pool.join()
+        return np.vstack(list(chain(*rlt))).astype(np.float32)
 
-        tem = np.ndarray([w, w], dtype=np.float32)
-        for kk in range(w**2):
-            tem[kk//w, kk%w] = rlt[kk]
-        del(rlt)
-        gc.collect()
-        
-        tv1_pxl[ii] = np.array(tem)
-        tv1_pxl_id[ii] = tv1_pxl[ii].argmin()
-        shift[ii, 0] = (tv1_pxl_id[ii]//w-int(w/2))
-        shift[ii, 1] = (tv1_pxl_id[ii]%w-int(w/2))
 
-    mk = np.zeros(fixed_img.shape)
-    mk[int(wz*2**(levs-2)):-int(wz*2**(levs-2)), int(wz*2**(levs-2)):-int(wz*2**(levs-2))] = 1
-    w = sch_config[levs-1]['wz']
-    step = sch_config[levs-1]['step']
-    s = s + shift[levs-2]
-    with mp.get_context('spawn').Pool(int(n_cpu-1)) as pool:
-        rlt = pool.map(partial(tv_l1_subpixel, fixed_img, img, mk), 
-                       [[step*(jj//w-int(w/2))+s[0], 
-                         step*(jj%w-int(w/2))+s[1]] for jj in np.int32(np.arange(w**2))])
-    pool.close() 
-    pool.join()
-    
-    tem = np.ndarray([w, w], dtype=np.float32)
-    for kk in range(w**2):
-        tem[kk//w, kk%w] = rlt[kk]
-    del(rlt)
-    gc.collect()
-    
-    tv1_pxl[levs-1] = np.array(tem)
-    tv1_pxl_id[levs-1] = tv1_pxl[levs-1].argmin()
-    shift[levs-1, 0] = step*(tv1_pxl_id[levs-1]//w-int(w/2))
-    shift[levs-1, 1] = step*(tv1_pxl_id[levs-1]%w-int(w/2))
-    
-    print(time.asctime())     
-    return tv1_pxl, tv1_pxl_id, shift, s+shift[levs-1]
-    
-def mrtv_reg3(levs=7, wz=10, sp_wz=8, sp_step=0.5, imgs=None, ps=None):
+def _find_50_peak_fit_both(f0, x0, f1, x1, fvars):
+    rlt0 = []
+    for ii in range(fvars[0].shape[1]):
+        # print(f'{fvars[0][:, ii]=}, {x0.shape=}, {fvars[1][:, ii]=}, {x1.shape=}')
+        rlt0.append(x0[np.argmin(np.abs(f0(x0, *fvars[0][:, ii]) - 0.5*np.max(f1(x1, *fvars[1][:, ii]))))])
+    return rlt0
+
+
+def _find_50_peak_fit_wl(x, x0, f1, x1, fvars):
+    rlt0 = []
+    # print(f"{x.shape=}, {x0.shape=}, {fvars[0].shape=}, {x1.shape=}, {fvars[1].shape=}")
+    for ii in range(fvars[0].shape[1]):
+        rlt0.append(x[np.argmin(np.abs(np.interp(x, x0, fvars[0][:, ii]) - 0.5*np.max(f1(x1, *fvars[1][:, ii]))))])
+    return rlt0
+
+
+def _find_50_peak_fit_edge(f0, x0, y, y0, fvars):
+    rlt0 = []
+    for ii in range(fvars[0].shape[1]):
+        rlt0.append(x0[np.argmin(np.abs(f0(x0, *fvars[0][:, ii]) - 0.5*np.max(np.interp(y, y0, fvars[1][:, ii]))))])
+    return rlt0
+
+
+def _find_50_peak_fit_none(x, x0, y, y0, fvars):
+    rlt0 = []
+    for ii in range(fvars[0].shape[1]):
+        rlt0.append(x[np.argmin(np.abs(np.interp(x, x0, fvars[0][:, ii]) - 0.5*np.max(np.interp(y, y0, fvars[1][:, ii]))))])
+    return rlt0
+
+
+@msgit(wd=100, fill='-')
+def lcf(ref, spec, constr=True, tol=1e-7):
     """
-    single process version of mrtv_reg2. Parallelization is implemented 
-    on the upper level on which the alignments of pairs of images are 
-    parallelized
+
+    :param ref:
+    :param spec:
+    :param const:
+    :param kwargs:
+    :return:
     """
-    if ps is not None:
-        imgs[1] = np.real(np.fft.ifftn(fourier_shift(np.fft.fftn(imgs[1]), ps)))
-        
-    sch_config = {}
-    sch_config[levs-1] = {'wz':sp_wz, 'step':sp_step}
-    tv1_pxl = {}
-    tv1_pxl_id = np.zeros(levs, dtype=np.int16)
-    shift = np.zeros([levs, 2], dtype=np.float32)
-    
-    for ii in range(levs-1):
-        sch_config[levs-2-ii] = {'wz':6, 'step':0.5**ii}
-    sch_config[0] = {'wz':wz, 'step':0.5**(levs-2)}
-
-    if ((np.array(imgs[0].shape)*0.5**(levs-2) - wz) <= 0).any():
-        return -1
-
-    for ii in range(levs-1): 
-        w = sch_config[ii]['wz']
-        step = sch_config[ii]['step']
-        f = zoom(imgs[0], step)
-        m = zoom(imgs[1], step)
-        mk = np.zeros(m.shape, dtype=np.int8)
-        mk[int(wz*2**(ii-1)):-int(wz*2**(ii-1)), int(wz*2**(ii-1)):-int(wz*2**(ii-1))] = 1
-        
-        s = np.array([0, 0], dtype=np.int32)
-        for jj in range(ii):
-            s = np.int_(s + shift[jj]*2**(ii-jj))
-        
-        tem = np.ndarray([w, w], dtype=np.float32)
-        for jj in range(w):
-            for kk in range(w):
-                tem[jj, kk] = tv_l1_pixel(f, m, mk, 
-                                          [jj-int(w/2)+s[0], kk-int(w/2)+s[1]])
-        
-        tv1_pxl[ii] = np.array(tem)
-        tv1_pxl_id[ii] = tv1_pxl[ii].argmin()
-        shift[ii, 0] = (tv1_pxl_id[ii]//w-int(w/2))
-        shift[ii, 1] = (tv1_pxl_id[ii]%w-int(w/2))
-
-    mk = np.zeros(imgs[0].shape)
-    mk[int(wz*2**(levs-2)):-int(wz*2**(levs-2)), int(wz*2**(levs-2)):-int(wz*2**(levs-2))] = 1
-    w = sch_config[levs-1]['wz']
-    step = sch_config[levs-1]['step']
-    s = s + shift[levs-2]
-    
-    tem = np.ndarray([w, w], dtype=np.float32)
-    for jj in range(w):
-        for kk in range(w):
-            tem[jj, kk] = tv_l1_subpixel(imgs[0], imgs[1], mk, 
-                                         [jj-int(w/2)+s[0], kk-int(w/2)+s[1]])
-    
-    tv1_pxl[levs-1] = np.array(tem)
-    tv1_pxl_id[levs-1] = tv1_pxl[levs-1].argmin()
-    shift[levs-1, 0] = step*(tv1_pxl_id[levs-1]//w-int(w/2))
-    shift[levs-1, 1] = step*(tv1_pxl_id[levs-1]%w-int(w/2))
-    
-    print(time.asctime())     
-    return tv1_pxl, tv1_pxl_id, shift, s+shift[levs-1]
-
-def mrtv_mpc_combo_reg(fixed_img, img, us=100, reference_mask=None, overlap_ratio=0.3, 
-                       levs=4, wz=10, sp_wz=20, sp_step=0.2):   
-    shift = np.zeros([levs+1, 2])
-    if reference_mask is not None:
-        shift[0] = phase_cross_correlation(fixed_img, img, upsample_factor=us, reference_mask=reference_mask, overlap_ratio=overlap_ratio)
+    dim = spec.reshape([spec.shape[0], -1]).shape[1]
+    # print(ref.shape, spec.shape, dim)
+    if constr:
+        bnds = Bounds(np.zeros(ref.shape[1]), np.ones(ref.shape[1]))
+        eq_constr = [LinearConstraint(np.ones([1, ref.shape[1]]), [1], [1])]
+        with mp.Pool(N_CPU) as pool:
+            rlt = pool.map(partial(_lcf_constr_minimizer, ref, bnds, eq_constr, tol), [
+                spec.reshape([spec.shape[0], -1])[:, ii] for ii in range(dim)])
+        pool.close()
+        pool.join()
     else:
-        shift[0], _, _ = phase_cross_correlation(fixed_img, img, upsample_factor=us, overlap_ratio=overlap_ratio)
-    
-    tv1_pxl, tv1_pxl_id, shift[1:], ss = mrtv_reg2(fixed_img, img, levs=levs, wz=wz, sp_wz=sp_wz, sp_step=sp_step, ps=shift[0])
+        bnds = Bounds(np.zeros(ref.shape[1]), np.ones(ref.shape[1]))
+        with mp.Pool(N_CPU) as pool:
+            rlt = pool.map(partial(_lcf_unconstr_minimizer, ref, bnds, tol), [
+                spec.reshape([spec.shape[0], -1])[:, ii] for ii in range(dim)])
+        pool.close()
+        pool.join()
+    rlt = np.array(rlt, dtype=object)
+    return [np.vstack(rlt[:, 0]).T, np.vstack(rlt[:, 1]), np.vstack(rlt[:, 2]), np.vstack(rlt[:, 3])]
 
-    print(time.asctime())     
-    return tv1_pxl, tv1_pxl_id, shift, shift[0]+ss
 
-def mrtv_ls_combo_reg(ls_w=100, levs=2, wz=10, sp_wz=8, sp_step=0.5, imgs=None): 
-    """
-    line search combined with two-level multi-resolution search
-    """
-    shift =np.zeros([3, 2])
-    tv1_pxl_id = np.zeros(2, dtype=np.int16)
-    tv1_pxl = {}
-    tv_v = []
-    for ii in range(ls_w):
-        tv_v.append(tv_l1_pixel(imgs[0], imgs[1], 1, [2*ii-ls_w, 0]))
-    shift[0, 0] = 2*(np.array(tv_v).argmin() - int(ls_w/2))
-    
-    tv_h = []
-    for ii in range(ls_w):
-        tv_h.append(tv_l1_pixel(imgs[0], imgs[1], 1, [0, 2*ii-ls_w]))
-    shift[0, 1] = 2*(np.array(tv_h).argmin() - int(ls_w/2))
-    
-    tv1_pxl, tv1_pxl_id, shift[1:], ss = mrtv_reg3(levs=levs, wz=wz, sp_wz=sp_wz, 
-                                                   sp_step=sp_step, imgs=imgs,
-                                                   ps=shift[0])
+def _lcf_unconstr_minimizer(ref, bnds, tol, spec):
+    rlt = lsq_linear(ref, spec, bounds=bnds, tol=tol)
+    return (rlt.x.astype(np.float32), rlt.fun/np.sum(spec**2), rlt.status, np.int8(rlt.success))
 
-    print(time.asctime())     
-    return tv1_pxl, tv1_pxl_id, shift, shift[0]+ss
 
-def shift_img(img_shift):
-    img = img_shift[0]
-    shift = img_shift[1]
-    return np.real(np.fft.ifftn(fourier_shift(np.fft.fftn(img), shift)))
+def _lcf_constr_minimizer(ref, bnds, constr, tol, spec):
+    rlt = minimize(_lin_fun, 0.5*np.ones(ref.shape[1]), args=(ref, spec),
+                   method='trust-constr', bounds=bnds, constraints=constr, tol=tol)
+    return (rlt.x.astype(np.float32), rlt.fun/np.sum(spec**2), rlt.status, np.int8(rlt.success))
 
-def _pc(fixed_img, upsample_factor, img):
-    shift, _, _ = phase_cross_correlation(fixed_img, img, upsample_factor=upsample_factor)
-    img[:] = np.real(np.fft.ifftn(fourier_shift(np.fft.fftn(img), shift)))[:]
-    return shift, img
 
-def mp_pc(fixed_img, upsample_factor, img_stack):
-    n_cpu = os.cpu_count()
-    with mp.get_context('spawn').Pool(int(n_cpu-1)) as pool:
-        rlt = pool.map(partial(_pc, fixed_img, upsample_factor), 
-                       [img_stack[ii] for ii in range(img_stack.shape[0])])
-    pool.close() 
-    pool.join()
+def _lin_fun(x, A, b):
+    return ((np.matmul(A, x) - b)**2).sum()
 
-    return list(rlt[0]), np.array(rlt[1])
 
-def _mpc(fixed_img, reference_mask, overlap_ratio, img):
-    shift = phase_cross_correlation(fixed_img, img, reference_mask=reference_mask, 
-                                          overlap_ratio=overlap_ratio)
-    img[:] = np.real(np.fft.ifftn(fourier_shift(np.fft.fftn(img), shift)))[:]
-    return shift, img
+def cal_kde(masked_img):
+    imgv = masked_img[(masked_img != masked_img.min()) &
+                      (masked_img != masked_img.max())].flatten()
+    val = np.unique(imgv)
 
-def mp_mpc(fixed_img, reference_mask, overlap_ratio, img_stack):
-    n_cpu = os.cpu_count()
-    with mp.get_context('spawn').Pool(int(n_cpu-1)) as pool:
-        rlt = pool.map(partial(_mpc, fixed_img, reference_mask, overlap_ratio), 
-                       [img_stack[ii] for ii in range(img_stack.shape[0])])
-    pool.close() 
-    pool.join()
-    return list(rlt[0]), np.array(rlt[1])
-        
-def _sr(sr, fixed_img, mask, img):
-    shift = sr.register(fixed_img*mask, img*mask)
-    img[:] = sr.transform(img, shift)[:]
-    return shift, img
+    kde = KernelDensity(bandwidth=np.abs(val[1:]-val[:-1]).min()/1.5,
+                        algorithm="kd_tree", kernel='gaussian',
+                        metric='euclidean', atol=1e-5, rtol=1e-5,
+                        breadth_first=True, leaf_size=40, metric_params=None)\
+        .fit(imgv[:, None])
+    x_grid = np.linspace(val.min(), val.max(), 500)
+    pdf = np.exp(kde.score_samples(x_grid[:, None]))
 
-def mp_sr(mode, fixed_img, mask, img_stack):
-    if mode.upper() == 'TRANSLATION':
-        sr = StackReg(StackReg.TRANSLATION)
-    elif  mode.upper() == 'RIGID_BODY':
-        sr = StackReg(StackReg.RIGID_BODY)
-    elif  mode.upper() == 'SCALED_ROTATION':
-        sr = StackReg(StackReg.SCALED_ROTATION)
-    elif  mode.upper() == 'AFFINE':
-        sr = StackReg(StackReg.AFFINE)
-    elif  mode.upper() == 'BILINEAR':
-        sr = StackReg(StackReg.BILINEAR)
-                    
-    n_cpu = os.cpu_count()
-    with mp.get_context('spawn').Pool(int(n_cpu-1)) as pool:
-        rlt = pool.map(partial(_sr, sr, fixed_img, mask), 
-                       [img_stack[ii] for ii in range(img_stack.shape[0])])
-    pool.close() 
-    pool.join()
-    return list(rlt[0]), np.array(rlt[1])
+    return x_grid, pdf, val, imgv
+
+
+def sav_kde(fn, x_grid, pdf):
+    with open(fn, 'w') as f:
+        for x, y in zip(x_grid, pdf):
+            f.write(str(x)+'\t'+str(y)+'\n')
+
+
+def cal_fwhm(x_grid, pdf, margin=10):
+    x_grid = x_grid[margin:-margin]
+    pdf = pdf[margin:-margin]
+
+    pidx = np.argmax(pdf)
+    dmax = pdf[pidx]
+    peng = x_grid[pidx]
+
+    lidx = np.argmin(np.abs(pdf[:pidx] - dmax/2.))
+    lval = x_grid[lidx]
+
+    ridx = np.argmin(np.abs(pdf[pidx:] - dmax/2.)) + pidx
+    rval = x_grid[ridx]
+
+    e_cen = np.sum(pdf*x_grid)/np.sum(pdf)
+    return pidx, dmax, peng, lidx, lval, ridx, rval, e_cen

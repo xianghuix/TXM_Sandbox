@@ -6,16 +6,14 @@ Created on Mon May 18 14:38:41 2020
 @author: xiao
 """
 
-
 import os, glob, gc, time, shutil, numpy as np
 
 from pathlib import Path
 import h5py, tifffile, json
-from scipy.ndimage import zoom
+from scipy.ndimage import zoom, gaussian_filter as gf
 import skimage.restoration as skr
-import dxchange, tomopy
-import tomopy.util.mproc as mproc
-
+from skimage.transform import rescale
+import tomopy
 # from ..utils.io import (data_reader, tomo_h5_reader,
 #                         data_info, tomo_h5_info)
 from .io import (data_reader, tomo_h5_reader,
@@ -23,44 +21,41 @@ from .io import (data_reader, tomo_h5_reader,
 
 IF_LOG = True
 
-TOMO_RECON_PARAM_DICT = {}
-TOMO_RECON_PARAM_DICT["file_params"] = {"raw_data_top_dir":None,
-                                        "data_center_dir":None,
-                                        "recon_top_dir":None,
-                                        "debug_top_dir":None,
-                                        "cen_list_file":None,
-                                        "alt_flat_file":None,
-                                        "alt_dark_file":None,
-                                        "wedge_ang_auto_det_ref_fn":None}
-TOMO_RECON_PARAM_DICT["recon_config"] = {"recon_type":'Trial Center',
-                                        "use_debug":False,
-                                        "use_alt_flat":False,
-                                        "use_alt_dark":False,
-                                        "use_fake_flat":False,
-                                        "use_fake_dark":False,
-                                        "use_rm_zinger":False,
-                                        "use_mask":True,
-                                        "use_wedge_ang_auto_det":False,
-                                        "is_wedge":False}
-TOMO_RECON_PARAM_DICT["flt_params"] = {"filters":{}}
-TOMO_RECON_PARAM_DICT["data_params"] = {"scan_id":0,
-                                        "downsample":1,
-                                        "rot_cen":1280,
-                                        "cen_win_s":1240,
-                                        "cen_win_w":8,
-                                        "fake_flat_val":1e4,
-                                        "fake_dark_val":1e2,
-                                        "sli_s":1280,
-                                        "sli_e":1300,
-                                        "chunk_sz":200,
-                                        "margin":15,
-                                        "zinger_val":500,
-                                        "mask_ratio":1,
-                                        # "wedge_blankat":90,
-                                        "wedge_missing_s":500,
-                                        "wedge_missing_e":600,
-                                        "wedge_ang_auto_det_thres":500}
-TOMO_RECON_PARAM_DICT["alg_params"] = {}
+TOMO_RECON_PARAM_DICT = {"file_params": {"raw_data_top_dir": None,
+                                         "data_center_dir": None,
+                                         "recon_top_dir": None,
+                                         "debug_top_dir": None,
+                                         "cen_list_file": None,
+                                         "alt_flat_file": None,
+                                         "alt_dark_file": None,
+                                         "wedge_ang_auto_det_ref_fn": None},
+                         "recon_config": {"recon_type": 'Trial Cent',
+                                          "use_debug": False,
+                                          "use_alt_flat": False,
+                                          "use_alt_dark": False,
+                                          "use_fake_flat": False,
+                                          "use_fake_dark": False,
+                                          "use_rm_zinger": False,
+                                          "use_mask": True,
+                                          "use_wedge_ang_auto_det": False,
+                                          "is_wedge": False}, "flt_params": {"filters": {}},
+                         "data_params": {"scan_id": 0,
+                                         "downsample": 1,
+                                         "rot_cen": 1280,
+                                         "cen_win_s": 1240,
+                                         "cen_win_w": 8,
+                                         "fake_flat_val": 1e4,
+                                         "fake_dark_val": 1e2,
+                                         "sli_s": 1280,
+                                         "sli_e": 1300,
+                                         "chunk_sz": 200,
+                                         "margin": 15,
+                                         "zinger_val": 500,
+                                         "mask_ratio": 1,
+                                         # "wedge_blankat":90,
+                                         "wedge_missing_s": 500,
+                                         "wedge_missing_e": 600,
+                                         "wedge_ang_auto_det_thres": 0.1}, "alg_params": {}}
 
 FILTERLIST = ["phase retrieval",
               "flatting bkg",
@@ -78,16 +73,21 @@ FILTERLIST = ["phase retrieval",
               "denoise: denoise_wavelet"]
 
 
-def alignt_proj(data, data_ref = None, **kwargs):
+def alignt_proj(data, data_ref=None, **kwargs):
     pass
 
-def data_down_sampling(data, levels):
-    return zoom(data, levels)
 
-def get_dim_ang_range_range_sli(dim_info, reader, fn, cfg, 
-                                sli_start=0, sli_end=None, 
-                                col_start=None, col_end=None, 
-                                ds_use=False, ds_level=1.0, thres=500):
+def data_down_sampling(data, levels):
+    if np.any((np.array(levels) - 1) > 0):
+        return rescale(data, 1 / np.array(levels), mode='edge', anti_aliasing=True)
+    else:
+        return rescale(data, 1 / np.array(levels), mode='edge', anti_aliasing=False)
+
+
+def get_dim_ang_range_range_sli(dim_info, reader, fn, cfg,
+                                sli_start=0, sli_end=None,
+                                col_start=None, col_end=None,
+                                ds_use=False, ds_level=1.0, thres=0.1):
     """
     read_data(reader, fn, cfg, sli_start=0, sli_end=20,
               col_start=None, col_end=None,
@@ -95,7 +95,7 @@ def get_dim_ang_range_range_sli(dim_info, reader, fn, cfg,
               use_fake_flat=False, use_fake_dark=False,
               fake_flat_val=1e4, fake_dark_val=100,
               ds_use=False, ds_level=1.0, mean_axis=None)
-    
+
     inputs:
         fn: str,
             full file path to the h5 raw data file
@@ -125,53 +125,65 @@ def get_dim_ang_range_range_sli(dim_info, reader, fn, cfg,
     img_shape = dim_info(fn, dtype='data', cfg=cfg)
     if sli_end is None:
         sli_end = img_shape[1]
-    elif sli_end>img_shape[1]:
+    elif sli_end > img_shape[1]:
         print('sli_end exceeds the maximum allowed range...')
         return None
     else:
         sli_end = int(sli_end)
-        
+
     if col_start is None:
         col_start = 0
     else:
         col_start = int(col_start)
-    
+
     if col_end is None:
         col_end = img_shape[2]
     else:
         col_end = int(col_end)
-        
-    tem, _, _, _ = read_data(reader, fn, cfg, 
+
+    tem, _, _, _ = read_data(reader, fn, cfg,
                              sli_start=sli_start, sli_end=sli_end,
                              col_start=col_start, col_end=col_end,
                              flat_name=None, dark_name=None,
                              use_fake_flat=False, use_fake_dark=False,
                              fake_flat_val=1e4, fake_dark_val=100,
                              ds_use=ds_use, ds_level=ds_level, mean_axis=2)
-    bad_angs = tem<thres    
+    bad_angs = tem < thres
     return bad_angs
 
-def get_file(raw_data_top_dir, scan_id, cfg):
+
+def get_file(raw_data_top_dir, scan_id, cfg, recon_top_dir=None):
     print(cfg['tomo_raw_fn_template'].format(scan_id))
     data_file = glob.glob(os.path.join(raw_data_top_dir, cfg['tomo_raw_fn_template'].format(scan_id)))
 
     if data_file is []:
         return None
-    output_file = os.path.join(raw_data_top_dir,
-                               'recon_'+os.path.basename(data_file[0]).split(".")[-2],
-                               'recon_'+os.path.basename(data_file[0]).split(".")[-2])
+
+    if recon_top_dir is None:
+        output_file = os.path.join(raw_data_top_dir,
+                                   'recon_' + os.path.basename(data_file[0]).split(".")[-2],
+                                   'recon_' + os.path.basename(data_file[0]).split(".")[-2] + "_{0}.tiff")
+    else:
+        output_file = os.path.join(recon_top_dir,
+                                   'recon_' + os.path.basename(data_file[0]).split(".")[-2],
+                                   'recon_' + os.path.basename(data_file[0]).split(".")[-2] + "_{0}.tiff")
+    if (not os.path.exists(os.path.dirname(output_file))) and (recon_top_dir is not None):
+        os.makedirs(os.path.dirname(output_file), mode=0o777)
     return data_file[0], output_file
 
-def if_log(flt_dict):
-    use_log = True
-    for key in flt_dict.keys():
-        if 'phase retrieval' == flt_dict[key]['filter_name']:
-            if 'bronnikov' == flt_dict[key]['params']['filter']:
-                use_log = False
-                return use_log
-    return use_log
 
-def normalize(arr, flat, dark, cutoff=None, ncore=None, out=None):
+def if_log(flt_dict):
+    if sorted(flt_dict.keys())[0]:
+        for key in sorted(flt_dict.keys()):
+            if 'phase retrieval' == flt_dict[key]['filter_name']:
+                if 'bronnikov' == flt_dict[key]['params']['filter']:
+                    return False
+        return True
+    else:
+        return True
+
+
+def normalize(arr, flat, dark, fake_flat_roi=None, cutoff=None, ncore=None, out=None):
     """
     Normalize raw projection data using the flat and dark field projections.
 
@@ -196,26 +208,29 @@ def normalize(arr, flat, dark, cutoff=None, ncore=None, out=None):
     ndarray
         Normalized 3D tomographic data.
     """
-    flat = np.mean(flat, axis=0, dtype=np.float32)
+    if fake_flat_roi is None:
+        flat = np.mean(flat, axis=0, dtype=np.float32)
     dark = np.mean(dark, axis=0, dtype=np.float32)
-
-    with mproc.set_numexpr_threads(ncore):
-        denom = (flat-dark).astype(np.float32)
-        out = (arr-dark).astype(np.float32)
-        out[:] = (out/denom)[:]
+    # print(arr.shape, flat.shape, dark.shape)
+    with tomopy.util.mproc.set_numexpr_threads(ncore):
+        denom = (flat - dark).astype(np.float32)
+        out = (arr - dark).astype(np.float32)
+        out[:] = (out / denom)[:]
         out[np.isnan(out)] = 1
         out[np.isinf(out)] = 1
-        out[out<=0] = 1
+        out[out <= 0] = 1
         if cutoff is not None:
             cutoff = np.float32(cutoff)
-            out[:] = np.where(out>cutoff, cutoff, out)[:]
+            out[:] = np.where(out > cutoff, cutoff, out)[:]
     return out
+
 
 def read_data(reader, fn, cfg, sli_start=0, sli_end=20,
               col_start=None, col_end=None,
               flat_name=None, dark_name=None,
               use_fake_flat=False, use_fake_dark=False,
               fake_flat_val=1e4, fake_dark_val=100,
+              fake_flat_roi=None,
               ds_use=False, ds_level=1.0, mean_axis=None):
     """
     input:
@@ -245,67 +260,108 @@ def read_data(reader, fn, cfg, sli_start=0, sli_end=20,
     return: tuple of ndarray, or None
         return data, white, dark, theta if succeeds; otherwise None
     """
-    if flat_name == None:
+    if flat_name is None:
         flat_name = fn
-    if dark_name == None:
+    if dark_name is None:
         dark_name = fn
-    
+
+    theta = reader(fn, dtype='theta', sli=[None], cfg=cfg).astype(np.float32)
+    idx = rm_redundant(theta)
+    theta = theta[idx]
+
     if mean_axis is None:
         if ds_use:
-            data = data_down_sampling(reader(fn, dtype='data', sli=[None, [sli_start, sli_end], [col_start, col_end]], cfg=cfg), [1, ds_level, ds_level]).astype(np.float32)
-    
+            data = data_down_sampling(reader(fn, dtype='data',
+                                             sli=[None, [sli_start, sli_end], [col_start, col_end]],
+                                             cfg=cfg), [1, ds_level, ds_level]).astype(np.float32)[idx]
+
             if use_fake_flat:
-                white = data_down_sampling(fake_flat_val*np.ones([8, data.shape[1], data.shape[2]]), [1, ds_level, ds_level]).astype(np.float32)
+                if fake_flat_roi is None:
+                    white = data_down_sampling(fake_flat_val * np.ones([8, data.shape[1], data.shape[2]]),
+                                               [1, ds_level, ds_level]).astype(np.float32)
+                else:
+                    white = data_down_sampling((data[:, fake_flat_roi[0]:fake_flat_roi[1],
+                                                fake_flat_roi[2]:fake_flat_roi[3]].mean(axis=(1, 2), keepdims=True) *
+                                                np.ones([1, data.shape[1], data.shape[2]])),
+                                               [1, ds_level, ds_level]).astype(np.float32)
             else:
-                white = data_down_sampling(reader(fn, dtype='flat', sli=[None, [sli_start, sli_end], [col_start, col_end]], cfg=cfg), [1, ds_level, ds_level]).astype(np.float32)
-    
+                white = data_down_sampling(
+                    reader(flat_name, dtype='flat', sli=[None, [sli_start, sli_end], [col_start, col_end]], cfg=cfg),
+                    [1, ds_level, ds_level]).astype(np.float32)
+
             if use_fake_dark:
-                dark = data_down_sampling(fake_dark_val*np.ones([8, data.shape[1], data.shape[2]]), [1, ds_level, ds_level]).astype(np.float32)
+                dark = data_down_sampling(fake_dark_val * np.ones([8, data.shape[1], data.shape[2]]),
+                                          [1, ds_level, ds_level]).astype(np.float32)
             else:
-                dark = data_down_sampling(reader(fn, dtype='dark', sli=[None, [sli_start, sli_end], [col_start, col_end]], cfg=cfg), [1, ds_level, ds_level]).astype(np.float32)    
-            theta = reader(fn, dtype='theta', sli=[None], cfg=cfg).astype(np.float32)
+                dark = data_down_sampling(
+                    reader(dark_name, dtype='dark', sli=[None, [sli_start, sli_end], [col_start, col_end]], cfg=cfg),
+                    [1, ds_level, ds_level]).astype(np.float32)
         else:
-            data = reader(fn, dtype='data', sli=[None, [sli_start, sli_end], [col_start, col_end]], cfg=cfg).astype(np.float32)
-    
+            data = reader(fn, dtype='data', sli=[None, [sli_start, sli_end], [col_start, col_end]], cfg=cfg).astype(
+                np.float32)[idx]
+
             if use_fake_flat:
-                white = fake_flat_val*np.ones([8, data.shape[1], data.shape[2]], dtype=np.float32)
+                if fake_flat_roi is None:
+                    white = fake_flat_val * np.ones([8, data.shape[1], data.shape[2]], dtype=np.float32)
+                else:
+                    white = data[:, fake_flat_roi[0]:fake_flat_roi[1],
+                                 fake_flat_roi[2]:fake_flat_roi[3]].mean(axis=(1, 2), keepdims=True) * \
+                            np.ones([1, data.shape[1], data.shape[2]], dtype=np.float32)
             else:
-                white = reader(fn, dtype='flat', sli=[None, [sli_start, sli_end], [col_start, col_end]], cfg=cfg).astype(np.float32)
-    
+                white = reader(flat_name, dtype='flat', sli=[None, [sli_start, sli_end], [col_start, col_end]],
+                               cfg=cfg).astype(np.float32)
+
             if use_fake_dark:
-                dark = fake_dark_val*np.ones([8, data.shape[1], data.shape[2]], dtype=np.float32)
+                dark = fake_dark_val * np.ones([8, data.shape[1], data.shape[2]], dtype=np.float32)
             else:
-                dark = reader(fn, dtype='dark', sli=[None, [sli_start, sli_end], [col_start, col_end]], cfg=cfg).astype(np.float32)    
-            theta = reader(fn, dtype='theta', sli=[None], cfg=cfg).astype(np.float32)
+                dark = reader(dark_name, dtype='dark', sli=[None, [sli_start, sli_end], [col_start, col_end]],
+                              cfg=cfg).astype(np.float32)
     else:
         if ds_use:
-            data = data_down_sampling(reader(fn, dtype='data', sli=[None, [sli_start, sli_end], [col_start, col_end]], cfg=cfg), [1, ds_level, ds_level]).mean(axis=mean_axis).astype(np.float32)  
+            data = data_down_sampling(
+                reader(fn, dtype='data', sli=[None, [sli_start, sli_end], [col_start, col_end]], cfg=cfg),
+                [1, ds_level, ds_level]).astype(np.float32)[idx]
             if use_fake_flat:
-                white = data_down_sampling(fake_flat_val*np.ones([data.shape[1], data.shape[2]]), [ds_level, ds_level]).astype(np.float32)
+                white = data_down_sampling(fake_flat_val * np.ones([data.shape[1], data.shape[2]]),
+                                           [ds_level, ds_level]).astype(np.float32)
             else:
-                white = data_down_sampling(reader(fn, dtype='flat', sli=[None, [sli_start, sli_end], [col_start, col_end]], cfg=cfg), [1, ds_level, ds_level]).mean(axis=0).astype(np.float32)
-    
+                white = data_down_sampling(
+                    reader(flat_name, dtype='flat', sli=[None, [sli_start, sli_end], [col_start, col_end]], cfg=cfg),
+                    [1, ds_level, ds_level]).mean(axis=0).astype(np.float32)
+
             if use_fake_dark:
-                dark = data_down_sampling(fake_dark_val*np.ones([data.shape[1], data.shape[2]]), [ds_level, ds_level]).astype(np.float32)
+                dark = data_down_sampling(fake_dark_val * np.ones([data.shape[1], data.shape[2]]),
+                                          [ds_level, ds_level]).astype(np.float32)
             else:
-                dark = data_down_sampling(reader(fn, dtype='dark', sli=[None, [sli_start, sli_end], [col_start, col_end]], cfg=cfg), [1, ds_level, ds_level]).mean(axis=0).astype(np.float32)
-            # data[:] = ((data-dark).astype(np.float32)/(white- dark).astype(np.float32)).mean(axis=mean_axis).astype(np.float32)[:] 
-            theta = reader(fn, dtype='theta', sli=[None], cfg=cfg).astype(np.float32)             
+                dark = data_down_sampling(
+                    reader(dark_name, dtype='dark', sli=[None, [sli_start, sli_end], [col_start, col_end]], cfg=cfg),
+                    [1, ds_level, ds_level]).mean(axis=0).astype(np.float32)
+            data[:] = (data - dark[np.newaxis, :]) / (white[np.newaxis, :] - dark[np.newaxis, :])[:]
+            data[np.isinf(data)] = 0
+            data[np.isnan(data)] = 0
+            data = data.mean(axis=mean_axis).astype(np.float32)
         else:
-            data = reader(fn, dtype='data', sli=[None, [sli_start, sli_end], [col_start, col_end]], cfg=cfg).mean(axis=mean_axis).astype(np.float32)
+            data = reader(fn, dtype='data', sli=[None, [sli_start, sli_end], [col_start, col_end]], cfg=cfg).astype(
+                np.float32)[idx]
+            # print(data.shape)
             if use_fake_flat:
-                white = fake_flat_val*np.ones([data.shape[1], data.shape[2]], dtype=np.float32)
+                white = fake_flat_val * np.ones([data.shape[1], data.shape[2]], dtype=np.float32)
             else:
-                white = reader(fn, dtype='flat', sli=[None, [sli_start, sli_end], [col_start, col_end]], cfg=cfg).mean(axis=0).astype(np.float32)
-    
+                white = reader(flat_name, dtype='flat', sli=[None, [sli_start, sli_end], [col_start, col_end]],
+                               cfg=cfg).mean(axis=0).astype(np.float32)
+
             if use_fake_dark:
-                dark = fake_dark_val*np.ones([data.shape[1], data.shape[2]], dtype=np.float32)
+                dark = fake_dark_val * np.ones([data.shape[1], data.shape[2]], dtype=np.float32)
             else:
-                dark = reader(fn, dtype='dark', sli=[None, [sli_start, sli_end], [col_start, col_end]], cfg=cfg).mean(axis=0).astype(np.float32)
-            # data[:] = ((data - dark).astype(np.float32)/(white - dark).astype(np.float32)).mean(axis=mean_axis).astype(np.float32)[:]
-            theta = reader(fn, dtype='theta', sli=[None], cfg=cfg).astype(np.float32)
+                dark = reader(dark_name, dtype='dark', sli=[None, [sli_start, sli_end], [col_start, col_end]],
+                              cfg=cfg).mean(axis=0).astype(np.float32)
+            data[:] = (data - dark[np.newaxis, :]) / (white[np.newaxis, :] - dark[np.newaxis, :])[:]
+            data[np.isinf(data)] = 0
+            data[np.isnan(data)] = 0
+            data = data.mean(axis=mean_axis).astype(np.float32)
     gc.collect()
     return data, white, dark, theta
+
 
 def retrieve_phase(data, pixel_size=1e-4, dist=50, energy=20,
                    alpha=1e-3, pad=True, filter='paganin'):
@@ -320,6 +376,15 @@ def retrieve_phase(data, pixel_size=1e-4, dist=50, energy=20,
                                                    alpha=alpha, pad=pad)[:]
     return data
 
+
+def rm_redundant(ang):
+    dang = np.diff(ang, prepend=0)
+    idx = (dang > 0.01)
+    if np.argmax(idx) > 0:
+        idx[np.argmax(idx) - 1] = True
+    return idx
+
+
 def run_engine(**kwargs):
     """
     kwargs: dictionary
@@ -332,7 +397,7 @@ def run_engine(**kwargs):
     file_debug_top_dir = kwargs['file_params']['debug_top_dir']
     file_alt_flat_fn = kwargs['file_params']['alt_flat_file']
     file_alt_dark_fn = kwargs['file_params']['alt_dark_file']
-    file_cen_list_fn = kwargs['file_params']['cen_list_file']
+    # file_cen_list_fn = kwargs['file_params']['cen_list_file']
     file_wedge_ang_auto_det_ref_fn = kwargs['file_params']['wedge_ang_auto_det_ref_fn']
     file_cfg = kwargs['file_params']['io_confg']
     reader = kwargs['file_params']['reader']
@@ -350,8 +415,10 @@ def run_engine(**kwargs):
     data_col_e = kwargs["data_params"]['col_e']
     data_fake_flat_val = kwargs["data_params"]['fake_flat_val']
     data_fake_dark_val = kwargs["data_params"]['fake_dark_val']
+    fake_flat_roi = kwargs["data_params"]["fake_flat_roi"]
     data_chunk_sz = kwargs["data_params"]['chunk_sz']
     data_margin = kwargs["data_params"]['margin']
+    data_flat_blur_kernel = kwargs["data_params"]["blur_kernel"]
     data_zinger_val = kwargs["data_params"]['zinger_val']
     data_mask_ratio = kwargs["data_params"]['mask_ratio']
     # data_wedge_blankat = kwargs["data_params"]['wedge_blankat']
@@ -372,6 +439,7 @@ def run_engine(**kwargs):
     rec_use_alt_dark = kwargs['recon_config']['use_alt_dark']
     rec_use_fake_flat = kwargs['recon_config']['use_fake_flat']
     rec_use_fake_dark = kwargs['recon_config']['use_fake_dark']
+    rec_use_blur_flat = kwargs["recon_config"]["use_flat_blur"]
     rec_use_rm_zinger = kwargs['recon_config']['use_rm_zinger']
     rec_use_mask = kwargs['recon_config']['use_mask']
     rec_use_wedge_ang_auto_det = kwargs['recon_config']['use_wedge_ang_auto_det']
@@ -380,71 +448,90 @@ def run_engine(**kwargs):
     flt_param_dict = kwargs["flt_params"]
 
     alg_param_dict = kwargs["alg_params"]
-    
+
     if not rec_use_alt_flat:
         file_alt_flat_fn = None
     if not rec_use_alt_dark:
         file_alt_dark_fn = None
 
-    if rec_type == 'Trial Center':
+    if rec_type == 'Trial Cent':
         file_raw_fn, file_recon_template = get_file(file_raw_data_top_dir, data_scan_id, file_cfg)
 
-        data, white, dark, theta = read_data(reader, file_raw_fn, file_cfg, 
-                                             sli_start=data_sli_s,sli_end=data_sli_s+20,
+        data, white, dark, theta = read_data(reader, file_raw_fn, file_cfg,
+                                             sli_start=data_sli_s, sli_end=data_sli_s + 20,
                                              col_start=data_col_s, col_end=data_col_e,
                                              flat_name=file_alt_flat_fn, dark_name=file_alt_dark_fn,
                                              use_fake_flat=rec_use_fake_flat, use_fake_dark=rec_use_fake_dark,
                                              fake_flat_val=data_fake_flat_val, fake_dark_val=data_fake_dark_val,
                                              ds_use=rec_use_ds, ds_level=data_ds_level)
-        theta = theta * np.pi/180.0
+        theta = theta * np.pi / 180.0
         dim = data.shape
 
         if rec_use_rm_zinger:
             data[:] = tomopy.misc.corr.remove_outlier(data, data_zinger_val, size=15, axis=0)[:]
             white[:] = tomopy.misc.corr.remove_outlier(white, data_zinger_val, size=15, axis=0)[:]
-            
-        if is_wedge:
-            if rec_use_wedge_ang_auto_det:
-                bad_angs = get_dim_ang_range_range_sli(dim_info, reader, 
-                                                       file_wedge_ang_auto_det_ref_fn,
-                                                       file_cfg, data_sli_s, sli_end=data_sli_s+20,
-                                                       col_start=data_wedge_col_s, col_end=data_wedge_col_e,
-                                                       ds_use=rec_use_ds, ds_level=data_ds_level, 
-                                                       thres=data_wedge_ang_auto_det_thres)
-            else:
-                bad_angs = np.zeros([data.shape[0], data.shape[1]])
-                bad_angs[data_wedge_missing_s:data_wedge_missing_e, :] = 1
-            data[:] = sort_wedge(data, bad_angs, 0, 20)[:]
-            if rec_use_debug:
-                save_debug(file_debug_top_dir, 'wedge_data.tiff', data)
 
+        if rec_use_blur_flat:
+            white[:] = gf(white, data_flat_blur_kernel)[:]
         data[:] = normalize(data, white, dark)[:]
 
-        if rec_use_debug:
-            save_debug(file_debug_top_dir, 'norm_data.tiff', data)
-
-        for idx in sorted(flt_param_dict.keys()):
-            data[:] = run_filter(data, flt_param_dict[idx])[:]
+        if is_wedge:
+            if rec_use_wedge_ang_auto_det:
+                print('wedge_ref_file: ', file_wedge_ang_auto_det_ref_fn)
+                bad_angs = get_dim_ang_range_range_sli(dim_info,
+                                                       reader,
+                                                       file_wedge_ang_auto_det_ref_fn,
+                                                       file_cfg,
+                                                       sli_start=data_sli_s,
+                                                       sli_end=data_sli_s + 20,
+                                                       col_start=data_wedge_col_s, col_end=data_wedge_col_e,
+                                                       ds_use=rec_use_ds, ds_level=data_ds_level,
+                                                       thres=data_wedge_ang_auto_det_thres)
+            else:
+                bad_angs = np.zeros([data.shape[0], data.shape[1]], dtype=bool)
+                bad_angs[data_wedge_missing_s:data_wedge_missing_e, :] = True
+            data[:] = sort_wedge(data, bad_angs, 0, 20, padval=1)[:]
+            print(data.shape)
             if rec_use_debug:
-                save_debug(file_debug_top_dir, flt_param_dict[idx]['filter_name']+'_filtered_data.tiff', data)
+                save_debug(file_debug_top_dir, '1-wedge_data.tiff', data)
+
+        if rec_use_debug:
+            save_debug(file_debug_top_dir, '2-norm_data.tiff', data)
+
+        if 0 != len(flt_param_dict.keys()):
+            for idx in sorted(flt_param_dict.keys()):
+                data[:] = run_filter(data, flt_param_dict[idx])[:]
+                if rec_use_debug:
+                    save_debug(file_debug_top_dir,
+                               '3-filter_name' + str(flt_param_dict[idx].keys()) + '_filtered_data.tiff', data)
 
         if if_log(flt_param_dict):
             data[:] = tomopy.prep.normalize.minus_log(data)[:]
             print('doing log')
 
+        if is_wedge:
+            data[:] = sort_wedge(data, bad_angs, 0, 20, padval=0)[:]
+
         if rec_use_debug:
-            save_debug(file_debug_top_dir, 'log_data.tiff', data)
+            save_debug(file_debug_top_dir, '4-log_data.tiff', data)
 
         overwrite_dir(file_data_cen_dir)
-           
-        tomopy.write_center(data[:,int(dim[1]/2)-1:int(dim[1]/2)+1,:], theta, dpath=file_data_cen_dir,
-                            cen_range=(data_cen_win_s, data_cen_win_s+data_cen_win_w, 0.5),
-                            mask=rec_use_mask, ratio=data_mask_ratio,
-                            algorithm='gridrec',
-                            filter_name='parzen')
+
+        # tomopy.write_center(data[:,int(dim[1]/2)-1:int(dim[1]/2)+1,:],
+        #                     theta, dpath=file_data_cen_dir,
+        #                     cen_range=(data_cen_win_s, data_cen_win_s+data_cen_win_w, 0.5),
+        #                     mask=rec_use_mask, ratio=data_mask_ratio,
+        #                     algorithm='gridrec', filter_name='parzen')
+        write_center(data[:, int(dim[1] / 2) - 1:int(dim[1] / 2) + 1, :],
+                     theta, dpath=file_data_cen_dir,
+                     cen_range=(data_cen_win_s, data_cen_win_s + data_cen_win_w, 0.5),
+                     mask=rec_use_mask, ratio=data_mask_ratio,
+                     algorithm=(alg_param_dict['algorithm']
+                                if (alg_param_dict['algorithm'] != 'astra') else tomopy.astra),
+                     **(translate_params(alg_param_dict['params'])))
         rec_use_logging = True
         if rec_use_logging:
-            fout = os.path.join(os.path.dirname(file_raw_fn), ''.join(os.path.basename(file_raw_fn).split('.')[:-1]) +\
+            fout = os.path.join(os.path.dirname(file_raw_fn), ''.join(os.path.basename(file_raw_fn).split('.')[:-1]) + \
                                 '_finding_cneter_log.txt')
             with open(fout, "w") as fo:
                 for k, v in kwargs.items():
@@ -454,23 +541,38 @@ def run_engine(**kwargs):
         state = 1
         if is_wedge:
             if rec_use_wedge_ang_auto_det:
+                # bad_angs = get_dim_ang_range_range_sli(dim_info,
+                # reader,
+                # file_wedge_ang_auto_det_ref_fn,
+                # file_cfg,
+                # data_sli_s,
+                # sli_end=data_sli_e,
+                # # col_start=data_wedge_col_s, col_end=data_wedge_col_e,
+                # # ds_use=rec_use_ds, ds_level=data_ds_level,
+                # # thres=data_wedge_ang_auto_det_thres)
+                # print('wedge_ref_file: ', file_wedge_ang_auto_det_ref_fn)
                 bad_angs = get_dim_ang_range_range_sli(dim_info, reader, file_wedge_ang_auto_det_ref_fn,
-                                                       file_cfg, data_sli_s, sli_end=data_sli_e,
-                                                       col_start=data_wedge_col_s, col_end=data_wedge_col_e,
-                                                       ds_use=rec_use_ds, ds_level=data_ds_level, 
+                                                       file_cfg, sli_start=0,
+                                                       sli_end=None, col_start=data_wedge_col_s,
+                                                       col_end=data_wedge_col_e,
+                                                       ds_use=rec_use_ds, ds_level=data_ds_level,
                                                        thres=data_wedge_ang_auto_det_thres)
             else:
                 bad_angs = np.zeros([data.shape[0], data.shape[1]])
                 bad_angs[data_wedge_missing_s:data_wedge_missing_e, :] = 1
 
-        file_raw_fn, file_recon_template = get_file(file_raw_data_top_dir, data_scan_id, file_cfg)
+        # file_raw_fn, file_recon_template = get_file(file_raw_data_top_dir, data_scan_id,
+        #                                             file_cfg, recon_top_dir=file_recon_top_dir)
+        file_raw_fn, file_recon_template = get_file(file_raw_data_top_dir, data_scan_id, file_cfg,
+                                                    recon_top_dir=file_recon_top_dir)
+        print(file_raw_fn, file_recon_template)
         dim = dim_info(file_raw_fn, dtype='data', cfg=file_cfg)
 
         if data_chunk_sz >= (data_sli_e - data_sli_s):
             data_chunk_sz = (data_sli_e - data_sli_s)
             num_chunk = 1
         else:
-            num_chunk = np.int((data_sli_e - data_sli_s)/(data_chunk_sz - 2*data_margin)) + 1
+            num_chunk = np.int((data_sli_e - data_sli_s) / (data_chunk_sz - 2 * data_margin)) + 1
 
         for ii in range(num_chunk):
             try:
@@ -478,7 +580,7 @@ def run_engine(**kwargs):
                     sli_start = data_sli_s
                     sli_end = data_sli_s + data_chunk_sz
                 else:
-                    sli_start = data_sli_s + ii*(data_chunk_sz - 2*data_margin)
+                    sli_start = data_sli_s + ii * (data_chunk_sz - 2 * data_margin)
                     sli_end = sli_start + data_chunk_sz
                     if sli_end > data_sli_e:
                         sli_end = data_sli_e
@@ -489,58 +591,75 @@ def run_engine(**kwargs):
                     print('skip')
                     break
                 else:
-                    data, white, dark, theta = read_data(reader, file_raw_fn, file_cfg, 
+                    data, white, dark, theta = read_data(reader,
+                                                         file_raw_fn, file_cfg,
                                                          sli_start=sli_start, sli_end=sli_end,
                                                          col_start=data_col_s, col_end=data_col_e,
                                                          flat_name=file_alt_flat_fn, dark_name=file_alt_dark_fn,
-                                                         use_fake_flat=rec_use_fake_flat, use_fake_dark=rec_use_fake_dark,
-                                                         fake_flat_val=data_fake_flat_val, fake_dark_val=data_fake_dark_val,
+                                                         use_fake_flat=rec_use_fake_flat,
+                                                         use_fake_dark=rec_use_fake_dark,
+                                                         fake_flat_val=data_fake_flat_val,
+                                                         fake_dark_val=data_fake_dark_val,
+                                                         fake_flat_roi=fake_flat_roi,
                                                          ds_use=rec_use_ds, ds_level=data_ds_level)
 
-                    theta= theta*np.pi/180
+                    if is_wedge:
+                        data[:] = sort_wedge(data, bad_angs, sli_start, sli_end, padval=1)[:]
+
+                    theta = theta * np.pi / 180
                     if rec_use_rm_zinger:
                         data[:] = tomopy.misc.corr.remove_outlier(data, data_zinger_val, size=15, axis=0)[:]
                         white[:] = tomopy.misc.corr.remove_outlier(white, data_zinger_val, size=15, axis=0)[:]
 
+                    if rec_use_blur_flat:
+                        white[:] = gf(white, data_flat_blur_kernel)[:]
                     data[:] = normalize(data, white, dark)[:]
 
-                    for fp_key in sorted(flt_param_dict.keys()):
-                        data[:] = run_filter(data, flt_param_dict[fp_key])[:]
+                    if 0 != len(flt_param_dict.keys()):
+                        for fp_key in sorted(flt_param_dict.keys()):
+                            data[:] = run_filter(data, flt_param_dict[fp_key])[:]
 
                     if if_log(flt_param_dict):
                         data[:] = tomopy.prep.normalize.minus_log(data)[:]
+                        print('doing log')
 
                     if is_wedge:
-                        data[:] = sort_wedge(data, bad_angs, sli_start-data_sli_s, sli_end-data_sli_s)[:]
+                        data[:] = sort_wedge(data, bad_angs, sli_start, sli_end, padval=0)[:]
 
-                    print(alg_param_dict['algorithm'], alg_param_dict['params'])
                     data_recon = tomopy.recon(data, theta, center=data_rot_cen,
-                                              algorithm=alg_param_dict['algorithm'],
+                                              algorithm=(alg_param_dict['algorithm']
+                                                         if (alg_param_dict['algorithm'] != 'astra') else tomopy.astra),
                                               **(translate_params(alg_param_dict['params'])))
                     if rec_use_mask:
                         data_recon = tomopy.circ_mask(data_recon, 0, ratio=data_mask_ratio)
-                    
-                    dxchange.writer.write_tiff_stack(data_recon[int(data_margin):(sli_end - sli_start - int(data_margin)),:,:],
-                                                     axis=0, fname=file_recon_template,
-                                                     start=sli_start + int(data_margin),
-                                                     overwrite=True)
-                    del(data)
-                    del(white)
-                    del(dark)
-                    del(theta)
-                    del(data_recon)
+
+                    # dxchange.writer.write_tiff_stack(data_recon[int(data_margin):(sli_end - sli_start - int(data_margin)),:,:],
+                    #                                  axis=0, fname=file_recon_template,
+                    #                                  start=sli_start + int(data_margin),
+                    #                                  overwrite=True)
+
+                    write_tiff_stack(data_recon[int(data_margin):(sli_end - sli_start - int(data_margin)), :, :],
+                                     axis=0, fnt=file_recon_template,
+                                     start=sli_start + int(data_margin),
+                                     overwrite=True)
+                    del (data)
+                    del (white)
+                    del (dark)
+                    del (theta)
+                    del (data_recon)
                     gc.collect()
-                    print ('chunk ',ii, ' reconstruction is saved')
-                    print (time.asctime())
+                    print('chunk ', ii, ' reconstruction is saved')
+                    print(time.asctime())
             except Exception as e:
                 state = 0
                 print(type(e))
                 print(e.args)
         if state == 1:
-            print ('Reconstruction finishes!')
+            print('Reconstruction finishes!')
             rec_logging = True
             if rec_logging is True:
-                fout = os.path.join(Path(file_recon_template).parents[0], ''.join(os.path.basename(file_raw_fn).split('.')[:-1]) +\
+                fout = os.path.join(Path(file_recon_template).parents[0],
+                                    ''.join(os.path.basename(file_raw_fn).split('.')[:-1]) + \
                                     '_recon_log.txt')
                 fo = open(fout, "w")
                 for k, v in kwargs.items():
@@ -548,7 +667,7 @@ def run_engine(**kwargs):
                 fo.close()
             return 0
         else:
-            print ('Reconstruction is terminated due to error.')
+            print('Reconstruction is terminated due to error.')
             return -1
 
 
@@ -558,80 +677,86 @@ def run_filter(data, flt):
     print('running', flt_name)
     if flt_name == "denoise: wiener":
         psfw = int(params['psf'])
-        params['psf'] = np.ones([psfw, psfw])/(psfw**2)
+        params['psf'] = np.ones([psfw, psfw]) / (psfw ** 2)
         for ii in range(data.shape[0]):
             data[ii] = skr.wiener(data[ii], params['psf'],
                                   params['balance'], reg=params['reg'],
                                   is_real=params['is_real'], clip=params['clip'])[:]
     elif flt_name == "denoise: unsupervised_wiener":
         psfw = int(params['psf'])
-        params['psf'] = np.ones([psfw, psfw])/(psfw**2)
+        params['psf'] = np.ones([psfw, psfw]) / (psfw ** 2)
         for ii in range(data.shape[0]):
-                data[ii], _ = skr.unsupervised_wiener(data[ii], params['psf'],
-                                                      reg=params['reg'], user_params=params['user_params'],
-                                                      is_real=params['is_real'], clip=params['clip'])[:]
-    elif flt_name  == "denoise: denoise_nl_means":
+            data[ii], _ = skr.unsupervised_wiener(data[ii], params['psf'],
+                                                  reg=params['reg'], user_params=params['user_params'],
+                                                  is_real=params['is_real'], clip=params['clip'])[:]
+    elif flt_name == "denoise: denoise_nl_means":
         for ii in range(data.shape[0]):
-                data[ii] = skr.denoise_nl_means(data[ii], patch_size=params['patch_size'],
-                                                patch_distance=params['patch_distance'],
-                                                h=params['h'], multichannel=params['multichannel'],
-                                                fast_mode=params['fast_mode'], sigma=params['sigma'],
-                                                preserve_range=None)[:]
-    elif flt_name  == "denoise: denoise_tv_bregman":
+            data[ii] = skr.denoise_nl_means(data[ii], patch_size=params['patch_size'],
+                                            patch_distance=params['patch_distance'],
+                                            h=params['h'], multichannel=params['multichannel'],
+                                            fast_mode=params['fast_mode'], sigma=params['sigma'],
+                                            preserve_range=None)[:]
+    elif flt_name == "denoise: denoise_tv_bregman":
         for ii in range(data.shape[0]):
             data[ii] = skr.denoise_tv_bregman(data[ii], params['weight'],
                                               max_iter=params['max_iter'], eps=params['eps'],
                                               isotropic=params['isotropic'],
                                               multichannel=params['multichannel'])[:]
-    elif flt_name  == "denoise: denoise_tv_chambolle":
+    elif flt_name == "denoise: denoise_tv_chambolle":
         for ii in range(data.shape[0]):
             data[ii] = skr.denoise_tv_chambolle(data[ii], params['weight'],
                                                 n_iter_max=params['n_iter_max'], eps=params['eps'],
                                                 multichannel=params['multichannel'])[:]
-    elif flt_name  == "denoise: denoise_bilateral":
+    elif flt_name == "denoise: denoise_bilateral":
         for ii in range(data.shape[0]):
             data[ii] = skr.denoise_bilateral(data[ii], win_size=params['win_size'],
-                                            sigma_color=params['sigma_color'], sigma_spatial=params['sigma_spatial'],
-                                            bins=params['bins'], mode=params['mode'],
-                                            cval=params['cval'], multichannel=params['multichannel'])[:]
-    elif flt_name  == "denoise: denoise_wavelet":
+                                             sigma_color=params['sigma_color'], sigma_spatial=params['sigma_spatial'],
+                                             bins=params['bins'], mode=params['mode'],
+                                             cval=params['cval'], multichannel=params['multichannel'])[:]
+    elif flt_name == "denoise: denoise_wavelet":
         for ii in range(data.shape[0]):
             data[ii] = skr.denoise_wavelet(data[ii], sigma=params['sigma'],
                                            wavelet=params['wavelet'], mode=params['mode'],
                                            wavelet_levels=params['wavelet_levels'], multichannel=params['multichannel'],
                                            convert2ycbcr=params['convert2ycbcr'], method=params['method'],
                                            rescale_sigma=params['rescale_sigma'])[:]
-    elif flt_name  == "flatting bkg":
+    elif flt_name == "flatting bkg":
         data[:] = tomopy.prep.normalize.normalize_bg(data, air=params['air'])[:]
-    elif flt_name  == "remove cupping":
+    elif flt_name == "remove cupping":
         data -= params['cc']
-    elif flt_name  == "stripe_removal: vo":
+    elif flt_name == "stripe_removal: vo":
         for key in params.keys():
             if key in ["la_size", "sm_size"]:
                 params[key] = int(params[key])
+        # print(data.shape)
+        # print(params)
         data[:] = tomopy.prep.stripe.remove_all_stripe(data, **params)[:]
-    elif flt_name  == "stripe_removal: ti":
+    elif flt_name == "stripe_removal: ti":
         data[:] = tomopy.prep.stripe.remove_stripe_ti(data, **params)[:]
-    elif flt_name  == "stripe_removal: sf":
+    elif flt_name == "stripe_removal: sf":
         params['size'] = int(params['size'])
         data[:] = tomopy.prep.stripe.remove_stripe_sf(data, **params)[:]
-    elif flt_name  == "stripe_removal: fw":
+    elif flt_name == "stripe_removal: fw":
         params['level'] = int(params['level'])
         data[:] = tomopy.prep.stripe.remove_stripe_fw(data, **params)[:]
-    elif flt_name  == "phase retrieval":
+    elif flt_name == "phase retrieval":
         data[:] = retrieve_phase(data, **params)[:]
         # data[:] = tomopy.prep.phase.retrieve_phase(data, **params)[:]
     return data
+
 
 def save_debug(debug_dir, debug_fn, data):
     if not os.path.exists(debug_dir):
         os.makedirs(debug_dir)
     tifffile.imsave(os.path.join(debug_dir, debug_fn), data.astype(np.float32))
 
-def sort_wedge(data, bad_angs, sli_start, sli_end):
+
+def sort_wedge(data, bad_angs, sli_start, sli_end, padval=0):
+    bad_angs = match_size(data, bad_angs)
     for ii in range(sli_start, sli_end):
-        data[bad_angs[:, ii], ii, :] = 0
+        data[bad_angs[:, ii], ii - sli_start, :] = padval
     return data
+
 
 def translate_params(params):
     for key, param in params.items():
@@ -642,6 +767,16 @@ def translate_params(params):
         elif param == 'False':
             params[key] = False
     return params
+
+
+def match_size(data, bad_angs):
+    if bad_angs.shape[0] < data.shape[0]:
+        bad_angs = np.pad(bad_angs, [[0, data.shape[0] - bad_angs.shape[0]],
+                                     [0, 0]], mode='edge')
+    elif bad_angs.shape[0] > data.shape[0]:
+        bad_angs = bad_angs[:data.shape[0], ...]
+    return bad_angs
+
 
 def overwrite_dir(path):
     if os.path.isdir(path):
@@ -655,3 +790,158 @@ def overwrite_dir(path):
         return -1
 
 
+def write_center(tomo, theta, dpath='tmp/center', cen_range=None, ind=None,
+                 mask=False, ratio=1., sinogram_order=False, algorithm='gridrec',
+                 filter_name='parzen', **kwargs):
+    """
+    Save images reconstructed with a range of rotation centers.
+
+    Helps finding the rotation center manually by visual inspection of
+    images reconstructed with a set of different centers.The output
+    images are put into a specified folder and are named by the
+    center position corresponding to the image.
+
+    Parameters
+    ----------
+    tomo : ndarray
+        3D tomographic data.
+    theta : array
+        Projection angles in radian.
+    dpath : str, optional
+        Folder name to save output images.
+    cen_range : list, optional
+        [start, end, step] Range of center values.
+    ind : int, optional
+        Index of the slice to be used for reconstruction.
+    mask : bool, optional
+        If ``True``, apply a circular mask to the reconstructed image to
+        limit the analysis into a circular region.
+    ratio : float, optional
+        The ratio of the radius of the circular mask to the edge of the
+        reconstructed image.
+    sinogram_order: bool, optional
+        Determins whether data is a stack of sinograms (True, y-axis first axis)
+        or a stack of radiographs (False, theta first axis).
+    algorithm : {str, function}
+        One of the following string values.
+
+        'art'
+            Algebraic reconstruction technique :cite:`Kak:98`.
+        'bart'
+            Block algebraic reconstruction technique.
+        'fbp'
+            Filtered back-projection algorithm.
+        'gridrec'
+            Fourier grid reconstruction algorithm :cite:`Dowd:99`,
+            :cite:`Rivers:06`.
+        'mlem'
+            Maximum-likelihood expectation maximization algorithm
+            :cite:`Dempster:77`.
+        'osem'
+            Ordered-subset expectation maximization algorithm
+            :cite:`Hudson:94`.
+        'ospml_hybrid'
+            Ordered-subset penalized maximum likelihood algorithm with
+            weighted linear and quadratic penalties.
+        'ospml_quad'
+            Ordered-subset penalized maximum likelihood algorithm with
+            quadratic penalties.
+        'pml_hybrid'
+            Penalized maximum likelihood algorithm with weighted linear
+            and quadratic penalties :cite:`Chang:04`.
+        'pml_quad'
+            Penalized maximum likelihood algorithm with quadratic penalty.
+        'sirt'
+            Simultaneous algebraic reconstruction technique.
+        'tv'
+            Total Variation reconstruction technique
+            :cite:`Chambolle:11`.
+        'grad'
+            Gradient descent method with a constant step size
+        'tikh'
+            Tikhonov regularization with identity Tikhonov matrix.            
+
+
+    filter_name : str, optional
+        Name of the filter for analytic reconstruction.
+
+        'none'
+            No filter.
+        'shepp'
+            Shepp-Logan filter (default).
+        'cosine'
+            Cosine filter.
+        'hann'
+            Cosine filter.
+        'hamming'
+            Hamming filter.
+        'ramlak'
+            Ram-Lak filter.
+        'parzen'
+            Parzen filter.
+        'butterworth'
+            Butterworth filter.
+        'custom'
+            A numpy array of size `next_power_of_2(num_detector_columns)/2`
+            specifying a custom filter in Fourier domain. The first element
+            of the filter should be the zero-frequency component.
+        'custom2d'
+            A numpy array of size `num_projections*next_power_of_2(num_detector_columns)/2`
+            specifying a custom angle-dependent filter in Fourier domain. The first element
+            of each filter should be the zero-frequency component.
+    """
+    # for key,val in kwargs.items():
+    #     print(f"{key=}", "\t", f"{val=}")
+    tomo = tomopy.util.dtype.as_float32(tomo)
+    theta = tomopy.util.dtype.as_float32(theta)
+
+    if sinogram_order:
+        dy, dt, dx = tomo.shape
+    else:
+        dt, dy, dx = tomo.shape
+    if ind is None:
+        ind = dy // 2
+    if cen_range is None:
+        center = np.arange(dx / 2 - 5, dx / 2 + 5, 0.5)
+    else:
+        center = np.arange(*cen_range)
+
+    stack = tomopy.util.dtype.empty_shared_array((len(center), dt, dx))
+
+    for m in range(center.size):
+        if sinogram_order:
+            stack[m] = tomo[ind]
+        else:
+            stack[m] = tomo[:, ind, :]
+
+    # Reconstruct the same slice with a range of centers.
+    rec = tomopy.recon(stack,
+                       theta,
+                       center=center,
+                       sinogram_order=True,
+                       algorithm=algorithm,
+                       nchunk=1, **kwargs)
+
+    # Apply circular mask.
+    if mask is True:
+        rec = tomopy.circ_mask(rec, axis=0)
+
+    # Save images to a temporary folder.
+    dpath = os.path.abspath(dpath)
+    if not os.path.exists(dpath):
+        os.makedirs(dpath)
+
+    for m in range(len(center)):
+        tomopy.util.misc.write_tiff(data=rec[m], fname=dpath, digit='{0:.2f}'.format(center[m]))
+
+
+def write_tiff_stack(img_stack, axis=0, fnt=None, start=0, overwrite=True):
+    if axis == 0:
+        for ii in range(img_stack.shape[axis]):
+            tifffile.imsave(fnt.format(str(start + ii).zfill(5)), img_stack[ii].astype(np.float32))
+    elif axis == 1:
+        for ii in range(img_stack.shape[axis]):
+            tifffile.imsave(fnt.format(str(start + ii).zfill(5)), img_stack[:, ii, :].astype(np.float32))
+    elif axis == 2:
+        for ii in range(img_stack.shape[axis]):
+            tifffile.imsave(fnt.format(str(start + ii).zfill(5)), img_stack[:, :, ii].astype(np.float32))

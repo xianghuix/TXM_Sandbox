@@ -3,7 +3,7 @@
 """Basic model line shapes and distribution functions."""
 
 from numpy import (arctan, cos, exp, finfo, float64, isnan, log, pi, real, sin,
-                   sqrt, where)
+                   sqrt, where, polyval)
 from scipy.special import erf, erfc
 from scipy.special import gamma as gamfcn
 from scipy.special import wofz
@@ -452,3 +452,7 @@ def parabolic(x, a=0.0, b=0.0, c=0.0):
 
     """
     return a * x**2 + b * x + c
+
+
+def polynd(x, *args):
+    return polyval([*args], x)

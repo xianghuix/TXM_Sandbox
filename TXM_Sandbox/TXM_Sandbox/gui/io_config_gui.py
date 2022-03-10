@@ -9,8 +9,8 @@ import json
 
 from ipywidgets import widgets, GridspecLayout, dlink
 
-from .gui_components import (get_handles, create_widget, 
-                             enable_disable_boxes, save_io_config)
+from .gui_components import (get_handles, create_widget, enable_disable_boxes, save_io_config)
+
 
 class io_config_gui():
     def __init__(self, parent_h, form_sz=[650, 740]):
@@ -18,276 +18,333 @@ class io_config_gui():
         self.form_sz = form_sz
         self.global_h = parent_h
         self.hs = {}
-    
+
+
     def boxes_logics(self):
-        if self.global_h.use_struc_h5_reader:
-            boxes = ['L[0][3][0][1][0]_io_user_reader_box']
+        if self.hs['IOOptnH5 chbx'].value:
+            boxes = ['IOUserRdr box']
             enable_disable_boxes(self.hs, boxes, disabled=True, level=-1)
-            boxes = ['L[0][3][1][0][0]_io_tomo_data_box',
-                     'L[0][3][1][0][1]_io_tomo_info_box'
-                     'L[0][3][1][1][0]_io_xanes2D_data_box',
-                     'L[0][3][1][1][1]_io_xanes2D_info_box',
-                     'L[0][3][1][2][0]_io_xanes3D_data_box',
-                     'L[0][3][1][2][1]_io_xanes3D_info_box',
-                     'L[0][3][1][3]_io_confirm_box']
+            boxes = ['IOTomoConfigData box',
+                     'IOTomoConfigInfo box',
+                     'IOXANES2DConfigData box',
+                     'IOXANES2DConfigInfo box',
+                     'IOXANES3DConfigData box',
+                     'IOXANES3DConfigInfo box',
+                     'IOCfm box']
             enable_disable_boxes(self.hs, boxes, disabled=False, level=-1)
         else:
-            boxes = ['L[0][3][1][0][0]_io_tomo_data_box',
-                     'L[0][3][1][0][1]_io_tomo_info_box'
-                     'L[0][3][1][1][0]_io_xanes2D_data_box',
-                     'L[0][3][1][1][1]_io_xanes2D_info_box',
-                     'L[0][3][1][2][0]_io_xanes3D_data_box',
-                     'L[0][3][1][2][1]_io_xanes3D_info_box',
-                     'L[0][3][1][3]_io_confirm_box']
+            boxes = ['IOTomoConfigData box',
+                     'IOTomoConfigInfo box',
+                     'IOXANES2DConfigData box',
+                     'IOXANES2DConfigInfo box',
+                     'IOXANES3DConfigData box',
+                     'IOXANES3DConfigInfo box',
+                     'IOCfm box']
             enable_disable_boxes(self.hs, boxes, disabled=True, level=-1)
-            boxes = ['L[0][3][0][1][0]_io_user_reader_box']
+            boxes = ['IOUserRdr box']
             enable_disable_boxes(self.hs, boxes, disabled=False, level=-1) 
-    
+
+
     def build_gui(self):
         ## ## ## reader option -- start
-        self.hs['L[0][3][0]_io_option_form'] = create_widget('VBox', {'border':'3px solid #FFCC00', 'width':f'{self.form_sz[1]-86}px', 'height':f'{self.form_sz[0]-136}px'})
+        self.hs['IOOptn form'] = create_widget('VBox', {'border':'3px solid #FFCC00', 'width':f'{self.form_sz[1]-86}px', 'height':f'{self.form_sz[0]-136}px'})
         
         ## ## ## ## reader option -- start
-        self.hs['L[0][3][0][0]_io_option_box'] = create_widget('VBox', {'border':'3px solid #8855AA', 'width':f'{self.form_sz[1]-92}px', 'height':f'{0.07*(self.form_sz[0]-136)}px'})
-        self.hs['L[0][3][0][0][0]_io_option_checkbox'] = create_widget('Checkbox', {'width':f'{0.23*(self.form_sz[1]-86)}px', 'height':'90%'}, **{'description':'Struct h5', 'value':True, 'disabled':False, 'description_tooltip':'Check this if the data is saved in a h5 file with a structure of separated datasets for data, flat, dark, energy, and angle etc.', 'indent':False})
-        self.hs['L[0][3][0][0][0]_io_option_checkbox'].observe(self.L0_3_0_0_0_io_option_checkbox_change, names='value')
-        self.hs['L[0][3][0][0]_io_option_box'].children = get_handles(self.hs, 'L[0][3][0][0]_io_option_box', -1)
+        self.hs['IOOptn box'] = create_widget('VBox', {'border':'3px solid #8855AA', 'width':f'{self.form_sz[1]-94}px', 'height':f'{0.08*(self.form_sz[0]-136)}px'})
+        self.hs['IOOptnH5 chbx'] = create_widget('Checkbox', {'width':f'{0.23*(self.form_sz[1]-94)}px', 'height':f'{0.06*(self.form_sz[0]-136)}px'},
+                                                                       **{'description':'Struct h5', 'value':True, 'disabled':False,
+                                                                          'description_tooltip':'Check this if the data is saved in a h5 file with a structure of separated datasets for data, flat, dark, energy, and angle etc.', 'indent':False})
+
+        self.hs['IOOptnH5 chbx'].observe(self.io_optn_chbx_chg, names='value')
+        self.hs['IOOptn box'].children = [self.hs['IOOptnH5 chbx']]
         ## ## ## ## reader option -- end
         
         ## ## ## ## user reader load -- start
-        self.hs['L[0][3][0][1]_io_user_spec_box'] = create_widget('VBox', {'border':'3px solid #8855AA', 'width':f'{self.form_sz[1]-92}px', 'height':f'{0.23*(self.form_sz[0]-136)}px'})
+        self.hs['IOUserSpec box'] = create_widget('VBox', {'border':'3px solid #8855AA', 'width':f'{self.form_sz[1]-94}px', 'height':f'{0.33*(self.form_sz[0]-136)}px'})
         
         grid_user_reader_hs = GridspecLayout(3, 100,
                                     layout = {"border":"3px solid #FFCC00",
                                               "height":f'{0.23*(self.form_sz[0]-136)}px',
                                               "align_items":"flex-start",
                                               "justify_items":"flex-start"})
-        self.hs['L[0][3][0][1][0]_io_user_reader_box'] = grid_user_reader_hs
+        self.hs['IOUserRdr box'] = grid_user_reader_hs
         grid_user_reader_hs[0, :66] = create_widget('Text', {'width':f'{0.66*(self.form_sz[1]-86)}px', "height":f'{0.06*(self.form_sz[0]-136)}px'}, **{'disabled':True, 'value':'load tomo data reader'})
-        self.hs['L[0][3][0][1][0][0]_io_spec_tomo_reader_text'] = grid_user_reader_hs[0, :66]
-        grid_user_reader_hs[0, 68:83] = create_widget('SelectFilesButton', {'width':f'{0.15*(self.form_sz[1]-86)}px', "height":f'{0.043*(self.form_sz[0]-136)}px'}, **{'option':'askopenfilename','open_filetypes':(('python files', '*.py'),), 'text_h':self.hs['L[0][3][0][1][0][0]_io_spec_tomo_reader_text']})
-        self.hs['L[0][3][0][1][0][1]_io_spec_tomo_reader_button'] = grid_user_reader_hs[0, 68:83]
-        self.hs['L[0][3][0][1][0][1]_io_spec_tomo_reader_button'].description = 'Tomo Reader' 
+        self.hs['IOSpecTomoRdr text'] = grid_user_reader_hs[0, :66]
+        grid_user_reader_hs[0, 68:83] = create_widget('SelectFilesButton', {'width':f'{0.15*(self.form_sz[1]-86)}px', "height":f'{0.043*(self.form_sz[0]-136)}px'}, **{'option':'askopenfilename','open_filetypes':(('python files', '*.py'),), 'text_h':self.hs['IOSpecTomoRdr text']})
+        self.hs['IOSpecTomoRdr btn'] = grid_user_reader_hs[0, 68:83]
+        self.hs['IOSpecTomoRdr btn'].description = 'Tomo Reader' 
         grid_user_reader_hs[1, :66] = create_widget('Text', {'width':f'{0.66*(self.form_sz[1]-86)}px', "height":f'{0.06*(self.form_sz[0]-136)}px'}, **{'disabled':True, 'value':'load xanes2D data reader'})
-        self.hs['L[0][3][0][1][0][2]_io_spec_xanes2D_reader_text'] = grid_user_reader_hs[1, :66]
-        grid_user_reader_hs[1, 68:83] = create_widget('SelectFilesButton', {'width':f'{0.15*(self.form_sz[1]-86)}px', "height":f'{0.043*(self.form_sz[0]-136)}px'}, **{'option':'askopenfilename','open_filetypes':(('python files', '*.py'),), 'text_h':self.hs['L[0][3][0][1][0][0]_io_spec_tomo_reader_text']})
-        self.hs['L[0][3][0][1][0][3]_io_spec_xanes2D_reader_button'] = grid_user_reader_hs[1, 68:83]
-        self.hs['L[0][3][0][1][0][3]_io_spec_xanes2D_reader_button'].description = 'XANES2D Reader' 
+        self.hs['IOSpecXANES2DRdr text'] = grid_user_reader_hs[1, :66]
+        grid_user_reader_hs[1, 68:83] = create_widget('SelectFilesButton', {'width':f'{0.15*(self.form_sz[1]-86)}px', "height":f'{0.043*(self.form_sz[0]-136)}px'}, **{'option':'askopenfilename','open_filetypes':(('python files', '*.py'),), 'text_h':self.hs['IOSpecTomoRdr text']})
+        self.hs['IOSpecXANES2DRdr btn'] = grid_user_reader_hs[1, 68:83]
+        self.hs['IOSpecXANES2DRdr btn'].description = 'XANES2D Reader' 
         grid_user_reader_hs[2, :66] = create_widget('Text', {'width':f'{0.66*(self.form_sz[1]-86)}px', "height":f'{0.06*(self.form_sz[0]-136)}px'}, **{'disabled':True, 'value':'load xanes3D data reader'})
-        self.hs['L[0][3][0][1][0][4]_io_spec_xanes3D_reader_text'] = grid_user_reader_hs[2, :66]
-        grid_user_reader_hs[2, 68:83] = create_widget('SelectFilesButton', {'width':f'{0.15*(self.form_sz[1]-86)}px', "height":f'{0.043*(self.form_sz[0]-136)}px'}, **{'option':'askopenfilename','open_filetypes':(('python files', '*.py'),), 'text_h':self.hs['L[0][3][0][1][0][0]_io_spec_tomo_reader_text']})
-        self.hs['L[0][3][0][1][0][5]_io_spec_xanes3D_reader_button'] = grid_user_reader_hs[2, 68:83]
-        self.hs['L[0][3][0][1][0][5]_io_spec_xanes3D_reader_button'].description = 'XANES3D Reader' 
+        self.hs['IOSpecXANES3DRdr text'] = grid_user_reader_hs[2, :66]
+        grid_user_reader_hs[2, 68:83] = create_widget('SelectFilesButton', {'width':f'{0.15*(self.form_sz[1]-86)}px', "height":f'{0.043*(self.form_sz[0]-136)}px'}, **{'option':'askopenfilename','open_filetypes':(('python files', '*.py'),), 'text_h':self.hs['IOSpecTomoRdr text']})
+        self.hs['IOSpecXANES3DRdr btn'] = grid_user_reader_hs[2, 68:83]
+        self.hs['IOSpecXANES3DRdr btn'].description = 'XANES3D Reader' 
         
-        self.hs['L[0][3][0][1][0][1]_io_spec_tomo_reader_button'].on_click(self.L0_3_0_1_0_1_io_spec_tomo_reader_button_click)
-        self.hs['L[0][3][0][1][0][3]_io_spec_xanes2D_reader_button'].on_click(self.L0_3_0_1_0_3_io_spec_xanes2D_reader_button_click)
-        self.hs['L[0][3][0][1][0][5]_io_spec_xanes3D_reader_button'].on_click(self.L0_3_0_1_0_5_io_spec_xanes3D_reader_button_click)
-        self.hs['L[0][3][0][1][0]_io_user_reader_box'].children = get_handles(self.hs, 'L[0][3][0][1][0]_io_user_reader_box', -1)
+        self.hs['IOSpecTomoRdr btn'].on_click(self.io_spec_tomo_rdr_btn_clk)
+        self.hs['IOSpecXANES2DRdr btn'].on_click(self.io_spec_xanes2D_rdr_btn_clk)
+        self.hs['IOSpecXANES3DRdr btn'].on_click(self.io_spec_xanes3D_rdr_btn_clk)
+        self.hs['IOUserRdr box'].children = [self.hs['IOSpecTomoRdr text'],
+                                             self.hs['IOSpecTomoRdr btn'],
+                                             self.hs['IOSpecXANES2DRdr text'],
+                                             self.hs['IOSpecXANES2DRdr btn'],
+                                             self.hs['IOSpecXANES3DRdr text'],
+                                             self.hs['IOSpecXANES3DRdr btn']]
         
-        self.hs['L[0][3][0][1]_io_user_spec_box'].children = get_handles(self.hs, 'L[0][3][0][1]_io_user_spec_box', -1)
+        self.hs['IOUserSpec box'].children = [self.hs['IOUserRdr box']]
         ## ## ## ## user reader load -- end
         
-        self.hs['L[0][3][0]_io_option_form'].children = get_handles(self.hs, 'L[0][3][0]_io_option_form', -1)
-        ## ## ## reader option -- end
-        
         ## ## ## default file config -- start
-        self.hs['L[0][3][2]_fn_pattern_form'] = create_widget('VBox', {'border':'3px solid #FFCC00', 'width':f'{self.form_sz[1]-86}px', 'height':f'{self.form_sz[0]-136}px'})
+        self.hs['FnPatn box'] = create_widget('VBox', {'border':'3px solid #FFCC00', 'width':f'{self.form_sz[1]-94}px', 'height':f'{self.form_sz[0]-136}px'})
         
         ## ## ## ## default file patterns -- start
-        self.hs['L[0][3][2][0]_fn_def_patt_box'] = create_widget('VBox', {'border':'3px solid #8855AA', 'width':f'{self.form_sz[1]-92}px', 'height':f'{0.31*(self.form_sz[0]-136)}px'})
+        self.hs['FnDefPatn box'] = create_widget('VBox', {'border':'3px solid #8855AA', 'width':f'{self.form_sz[1]-100}px', 'height':f'{0.31*(self.form_sz[0]-136)}px'})
         
         grid_fn_pattern_hs = GridspecLayout(6, 100,
                                             layout = {"border":"3px solid #FFCC00",
                                                       "height":f'{0.36*(self.form_sz[0]-136)}px',
                                                       "align_items":"flex-start",
                                                       "justify_items":"flex-start"})
-        self.hs['L[0][3][2][0][0]_fn_def_edit_box'] = grid_fn_pattern_hs
+        self.hs['FnDefEdit box'] = grid_fn_pattern_hs
         
         grid_fn_pattern_hs[0, 38:70] = widgets.HTML('<span style="color:red; font-size: 150%; font-weight: bold; align: center; background-color:rgb(135,206,250);">' + 'Default Filename Patterns' + '</span>')
-        self.hs['L[0][3][2][0][0][0]_fn_def_patt_html'] = grid_fn_pattern_hs[0, 38:70]
+        self.hs['FnDefPatn label'] = grid_fn_pattern_hs[0, 38:70]
         grid_fn_pattern_hs[1, :50] = create_widget('Text', {'width':f'{0.45*(self.form_sz[1]-86)}px'}, **{'description':'tomo raw fn', 'value':'fly_scan_id_{0}.h5', 'disabled':False, 'description_tooltip':'default tomo raw data file name pattern'})
-        self.hs['L[0][3][2][0][0][1]_fn_tomo_def_raw_patt_text'] = grid_fn_pattern_hs[1, :50]
+        self.hs['FnTomoDefRawPatn text'] = grid_fn_pattern_hs[1, :50]
         grid_fn_pattern_hs[1, 50:] = create_widget('Text', {'width':f'{0.45*(self.form_sz[1]-86)}px'}, **{'description':'xanes2D raw fn', 'value':'xanes_scan2_id_{0}.h5', 'disabled':False, 'description_tooltip':'default xanes2D raw data file name pattern'})
-        self.hs['L[0][3][2][0][0][2]_fn_xanes2D_def_raw_patt_text'] = grid_fn_pattern_hs[1, 50:]
+        self.hs['FnXANES2DDefRawPatn text'] = grid_fn_pattern_hs[1, 50:]
         grid_fn_pattern_hs[2, :50] = create_widget('Text', {'width':f'{0.45*(self.form_sz[1]-86)}px'}, **{'description':'xanes3D raw tomo fn', 'value':'fly_scan_id_{0}.h5', 'disabled':False, 'description_tooltip':'default XANES3D raw tomo data file name pattern'})
-        self.hs['L[0][3][2][0][0][3]_fn_xanes3D_def_tomo_raw_patt_text'] = grid_fn_pattern_hs[2, :50]
+        self.hs['FnXANES3DDefRawPatn text'] = grid_fn_pattern_hs[2, :50]
         grid_fn_pattern_hs[2, 50:] = create_widget('Text', {'width':f'{0.45*(self.form_sz[1]-86)}px'}, **{'description':'xanes3D tomo recon dir', 'value':'recon_fly_scan_id_{0}', 'disabled':False, 'description_tooltip':'default XANES3D tomo recon directory name pattern'})
-        self.hs['L[0][3][2][0][0][4]_fn_xanes3D_def_tomo_recon_dir_patt_text'] = grid_fn_pattern_hs[2, 50:]
+        self.hs['FnXANES3DDefReconDirPatn text'] = grid_fn_pattern_hs[2, 50:]
         grid_fn_pattern_hs[3, :50] = create_widget('Text', {'width':f'{0.45*(self.form_sz[1]-86)}px'}, **{'description':'xanes3D tomo recon fn', 'value':'fly_scan_id_{0}.h5', 'disabled':False, 'description_tooltip':'default XANES3D tomo recon file name pattern'})
-        self.hs['L[0][3][2][0][0][5]_fn_xanes3D_def_tomo_recon_fn_patt_text'] = grid_fn_pattern_hs[3, :50]
+        self.hs['FnXANES3DDefReconFnPatn text'] = grid_fn_pattern_hs[3, :50]
         grid_fn_pattern_hs[5, 44:60] = create_widget('Button', {'width':f'{0.15*(self.form_sz[1]-86)}px', "height":f'{0.045*(self.form_sz[0]-136)}px'}, **{'description':'Confirm', 'disabled':False})
-        self.hs['L[0][3][2][0][0][6]_fn_def_patt_confirm_button'] = grid_fn_pattern_hs[5, 44:60]
-        self.hs['L[0][3][2][0][0][6]_fn_def_patt_confirm_button'].style.button_color = 'darkviolet'
-        self.hs['L[0][3][2][0][0][6]_fn_def_patt_confirm_button'].on_click(self.L0_3_2_0_0_6_fn_def_patt_confirm_button_click)
+        self.hs['FnDefPatnCfm btn'] = grid_fn_pattern_hs[5, 44:60]
+        self.hs['FnDefPatnCfm btn'].style.button_color = 'darkviolet'
+        self.hs['FnDefPatnCfm btn'].on_click(self.io_fn_def_patn_cfm_btn_clk)
         
-        self.hs['L[0][3][2][0][0]_fn_def_edit_box'].children = get_handles(self.hs, 'L[0][3][2][0][0]_fn_def_edit_box', -1)
+        self.hs['FnDefEdit box'].children = [self.hs['FnDefPatn label'],
+                                             self.hs['FnTomoDefRawPatn text'],
+                                             self.hs['FnXANES2DDefRawPatn text'],
+                                             self.hs['FnXANES3DDefRawPatn text'],
+                                             self.hs['FnXANES3DDefReconDirPatn text'],
+                                             self.hs['FnXANES3DDefReconFnPatn text'],
+                                             self.hs['FnDefPatnCfm btn']]
         
-        self.hs['L[0][3][2][0]_fn_def_patt_box'].children = get_handles(self.hs, 'L[0][3][2][0]_file_default_pattern_box', -1)
+        self.hs['FnDefPatn box'].children = [self.hs['FnDefEdit box']]
         ## ## ## ## default file patterns -- end
         
-        self.hs['L[0][3][2]_fn_pattern_form'].children = get_handles(self.hs, 'L[0][3][2]_file_pattern_form', -1)
+        self.hs['FnPatn box'].children = [self.hs['FnDefPatn box']]
         ## ## ## default file config -- end
+
+        self.hs['IOOptn form'].children = [self.hs['IOOptn box'],
+                                           self.hs['IOUserSpec box'],
+                                           self.hs['FnPatn box']]
+        ## ## ## reader option -- end
         
         ## ## ## structured h5 -- start
-        self.hs['L[0][3][1]_io_config_form'] = create_widget('VBox', {'border':'3px solid #FFCC00', 'width':f'{self.form_sz[1]-86}px', 'height':f'{self.form_sz[0]-136}px'})
+        self.hs['IOConfig form'] = create_widget('VBox', {'border':'3px solid #FFCC00', 'width':f'{self.form_sz[1]-86}px', 'height':f'{self.form_sz[0]-136}px'})
         
         ## ## ## ## tomo io config -- start        
-        self.hs['L[0][3][1][0]_io_tomo_config_box'] = create_widget('VBox', {'border':'3px solid #8855AA', 'width':f'{self.form_sz[1]-92}px', 'height':f'{0.31*(self.form_sz[0]-136)}px'})
+        self.hs['IOTomoConfig box'] = create_widget('VBox', {'border':'3px solid #8855AA', 'width':f'{self.form_sz[1]-92}px', 'height':f'{0.31*(self.form_sz[0]-136)}px'})
         
         grid_tomo_data_hs = GridspecLayout(2, 100,
                                     layout = {"border":"3px solid #FFCC00",
                                               "height":f'{0.12*(self.form_sz[0]-136)}px',
                                               "align_items":"flex-start",
                                               "justify_items":"flex-start"})
-        self.hs['L[0][3][1][0][0]_io_tomo_data_box'] = grid_tomo_data_hs
+        self.hs['IOTomoConfigData box'] = grid_tomo_data_hs
         grid_tomo_data_hs[0, 37:70] = widgets.HTML('<span style="color:red; font-size: 150%; font-weight: bold; align: center; background-color:rgb(135,206,250);">' + 'Tomo File Data Structure' + '</span>')
-        self.hs['L[0][3][1][0][0][4]_io_tomo_data_config_html'] = grid_tomo_data_hs[0, 37:70]
+        self.hs['IOTomoConfigData label'] = grid_tomo_data_hs[0, 37:70]
         grid_tomo_data_hs[1, 0:25] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'data path', 'value':'/img_tomo', 'disabled':False, 'description_tooltip':'path to sample image data in h5 file', 'indent':False})
-        self.hs['L[0][3][1][0][0][0]_io_tomo_img_text'] = grid_tomo_data_hs[1, 0:25]
+        self.hs['IOTomoConfigDataImg text'] = grid_tomo_data_hs[1, 0:25]
         grid_tomo_data_hs[1, 25:50] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'flat path', 'value':'/img_bkg', 'disabled':False, 'description_tooltip':'path to flat (reference) image data in h5 file', 'indent':False})
-        self.hs['L[0][3][1][0][0][1]_io_tomo_flat_text'] = grid_tomo_data_hs[1, 25:50]
+        self.hs['IOTomoConfigDataFlat text'] = grid_tomo_data_hs[1, 25:50]
         grid_tomo_data_hs[1, 50:75] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'dark path', 'value':'/img_dark', 'disabled':False, 'description_tooltip':'path to dark image data in h5 file', 'indent':False})
-        self.hs['L[0][3][1][0][0][2]_io_tomo_dark_text'] = grid_tomo_data_hs[1, 50:75]
+        self.hs['IOTomoConfigDataDark text'] = grid_tomo_data_hs[1, 50:75]
         grid_tomo_data_hs[1, 75:100] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'theta path', 'value':'/angle', 'disabled':False, 'description_tooltip':'path to theta in h5 file', 'indent':False})
-        self.hs['L[0][3][1][0][0][3]_io_tomo_theta_text'] = grid_tomo_data_hs[1, 75:100]
+        self.hs['IOTomoConfigDataTheta text'] = grid_tomo_data_hs[1, 75:100]
         
-        self.hs['L[0][3][1][0][0]_io_tomo_data_box'].children = get_handles(self.hs, 'L[0][3][1][0][0]_io_tomo_data_box', -1)
+        self.hs['IOTomoConfigData box'].children = [self.hs['IOTomoConfigData label'],
+                                                    self.hs['IOTomoConfigDataImg text'],
+                                                    self.hs['IOTomoConfigDataFlat text'],
+                                                    self.hs['IOTomoConfigDataDark text'],
+                                                    self.hs['IOTomoConfigDataTheta text']]
         
         grid_tomo_info_hs = GridspecLayout(3, 100,
                                     layout = {"border":"3px solid #FFCC00",
                                               "height":f'{0.18*(self.form_sz[0]-136)}px',
                                               "align_items":"flex-start",
                                               "justify_items":"flex-start"})
-        self.hs['L[0][3][1][0][1]_io_tomo_info_box'] = grid_tomo_info_hs
+        self.hs['IOTomoConfigInfo box'] = grid_tomo_info_hs
         grid_tomo_info_hs[0, 38:70] = widgets.HTML('<span style="color:red; font-size: 150%; font-weight: bold; align: center; background-color:rgb(135,206,250);">' + 'Config Tomo Data Info' + '</span>')
-        self.hs['L[0][3][1][0][1][8]_io_tomo_info_config_html'] = grid_tomo_info_hs[0, 38:70]
+        self.hs['IOTomoConfigInfo label'] = grid_tomo_info_hs[0, 38:70]
         grid_tomo_info_hs[1, 0:25] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info0 path', 'value':'/img_tomo', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
-        self.hs['L[0][3][1][0][1][0]_io_tomo_info0_text'] = grid_tomo_info_hs[1, 0:25]
+        self.hs['IOTomoConfigInfo0 text'] = grid_tomo_info_hs[1, 0:25]
         grid_tomo_info_hs[1, 25:50] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info1 path', 'value':'/angle', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
-        self.hs['L[0][3][1][0][1][1]_io_tomo_info1_text'] = grid_tomo_info_hs[1, 25:50]
+        self.hs['IOTomoConfigInfo1 text'] = grid_tomo_info_hs[1, 25:50]
         grid_tomo_info_hs[1, 50:75] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info2 path', 'value':'/Magnification', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
-        self.hs['L[0][3][1][0][1][2]_io_tomo_info2_text'] = grid_tomo_info_hs[1, 50:75]
+        self.hs['IOTomoConfigInfo2 text'] = grid_tomo_info_hs[1, 50:75]
         grid_tomo_info_hs[1, 75:] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info3 path', 'value':'/Pixel Size', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
-        self.hs['L[0][3][1][0][1][3]_io_tomo_info3_text'] = grid_tomo_info_hs[1, 75:]
+        self.hs['IOTomoConfigInfo3 text'] = grid_tomo_info_hs[1, 75:]
         
         grid_tomo_info_hs[2, 0:25] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info4 path', 'value':'/X_eng', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
-        self.hs['L[0][3][1][0][1][4]_io_tomo_info4_text'] = grid_tomo_info_hs[2, 0:25]
+        self.hs['IOTomoConfigInfo4 text'] = grid_tomo_info_hs[2, 0:25]
         grid_tomo_info_hs[2, 25:50] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info5 path', 'value':'/note', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
-        self.hs['L[0][3][1][0][1][5]_io_tomo_info5_text'] = grid_tomo_info_hs[2, 25:50]
+        self.hs['IOTomoConfigInfo5 text'] = grid_tomo_info_hs[2, 25:50]
         grid_tomo_info_hs[2, 50:75] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info6 path', 'value':'/scan_time', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
-        self.hs['L[0][3][1][0][1][6]_io_tomo_info6_text'] = grid_tomo_info_hs[2, 50:75]
+        self.hs['IOTomoConfigInfo6 text'] = grid_tomo_info_hs[2, 50:75]
         grid_tomo_info_hs[2, 75:] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info7 path', 'value':'', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
-        self.hs['L[0][3][1][0][1][7]_io_tomo_info7_text'] = grid_tomo_info_hs[2, 75:]
+        self.hs['IOTomoConfigInfo7 text'] = grid_tomo_info_hs[2, 75:]
         
-        self.hs['L[0][3][1][0][1]_io_tomo_info_box'].children = get_handles(self.hs, 'L[0][3][1][0][1]_io_tomo_info_box', -1)
+        self.hs['IOTomoConfigInfo box'].children = [self.hs['IOTomoConfigInfo label'],
+                                                    self.hs['IOTomoConfigInfo0 text'],
+                                                    self.hs['IOTomoConfigInfo1 text'],
+                                                    self.hs['IOTomoConfigInfo2 text'],
+                                                    self.hs['IOTomoConfigInfo3 text'],
+                                                    self.hs['IOTomoConfigInfo4 text'],
+                                                    self.hs['IOTomoConfigInfo5 text'],
+                                                    self.hs['IOTomoConfigInfo6 text'],
+                                                    self.hs['IOTomoConfigInfo7 text']]
         
-        self.hs['L[0][3][1][0]_io_tomo_config_box'].children = get_handles(self.hs, 'L[0][3][1][0]_io_tomo_config_box', -1)
+        self.hs['IOTomoConfig box'].children = [self.hs['IOTomoConfigData box'],
+                                                self.hs['IOTomoConfigInfo box']]
         ## ## ## ## tomo io config -- end
         
         ## ## ## ## xanes2D io config -- start 
-        self.hs['L[0][3][1][1]_io_xanes2D_config_box'] = create_widget('VBox', {'border':'3px solid #8855AA', 'width':f'{self.form_sz[1]-92}px', 'height':f'{0.31*(self.form_sz[0]-136)}px'})
+        self.hs['IOXANES2DConfig box'] = create_widget('VBox', {'border':'3px solid #8855AA', 'width':f'{self.form_sz[1]-92}px', 'height':f'{0.31*(self.form_sz[0]-136)}px'})
         
         grid_xanes2D_data_hs = GridspecLayout(2, 100,
                                     layout = {"border":"3px solid #FFCC00",
                                               "height":f'{0.12*(self.form_sz[0]-136)}px',
                                               "align_items":"flex-start",
                                               "justify_items":"flex-start"})
-        self.hs['L[0][3][1][1][0]_io_xanes2D_data_box'] = grid_xanes2D_data_hs
+        self.hs['IOXANES2DConfigData box'] = grid_xanes2D_data_hs
         grid_xanes2D_data_hs[0, 35:70] = widgets.HTML('<span style="color:red; font-size: 150%; font-weight: bold; align: center; background-color:rgb(135,206,250);">' + 'XANES2D File Data Structure' + '</span>')
-        self.hs['L[0][3][1][1][0][4]_io_xanes2D_data_config_html'] = grid_xanes2D_data_hs[0, 35:70]
+        self.hs['IOXANES2DConfigData label'] = grid_xanes2D_data_hs[0, 35:70]
         grid_xanes2D_data_hs[1, 0:25] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'data path', 'value':'/img_xanes', 'disabled':False, 'description_tooltip':'path to xanes image data in h5 file', 'indent':False})
-        self.hs['L[0][3][1][1][0][0]_io_xanes2D_img_text'] = grid_xanes2D_data_hs[1, 0:25]
+        self.hs['IOXANES2DConfigDataImg text'] = grid_xanes2D_data_hs[1, 0:25]
         grid_xanes2D_data_hs[1, 25:50] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'flat path', 'value':'/img_bkg', 'disabled':False, 'description_tooltip':'path to flat (reference) image data in h5 file', 'indent':False})
-        self.hs['L[0][3][1][1][0][1]_io_xanes2D_flat_text'] = grid_xanes2D_data_hs[1, 25:50]
+        self.hs['IOXANES2DConfigDataFlat text'] = grid_xanes2D_data_hs[1, 25:50]
         grid_xanes2D_data_hs[1, 50:75] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'dark path', 'value':'/img_dark', 'disabled':False, 'description_tooltip':'path to dark image data in h5 file', 'indent':False})
-        self.hs['L[0][3][1][1][0][2]_io_xanes2D_dark_text'] = grid_xanes2D_data_hs[1, 50:75]
+        self.hs['IOXANES2DConfigDataDark text'] = grid_xanes2D_data_hs[1, 50:75]
         grid_xanes2D_data_hs[1, 75:100] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'eng path', 'value':'/X_eng', 'disabled':False, 'description_tooltip':'path to x-ray energy in h5 file', 'indent':False})
-        self.hs['L[0][3][1][1][0][3]_io_xanes2D_eng_text'] = grid_xanes2D_data_hs[1, 75:100]
+        self.hs['IOXANES2DConfigDataEng text'] = grid_xanes2D_data_hs[1, 75:100]
         
-        self.hs['L[0][3][1][1][0]_io_xanes2D_data_box'].children = get_handles(self.hs, 'L[0][3][1][1][0]_io_xanes2D_data_box', -1)
+        self.hs['IOXANES2DConfigData box'].children = [self.hs['IOXANES2DConfigData label'],
+                                                       self.hs['IOXANES2DConfigDataImg text'],
+                                                       self.hs['IOXANES2DConfigDataFlat text'],
+                                                       self.hs['IOXANES2DConfigDataDark text'],
+                                                       self.hs['IOXANES2DConfigDataEng text']]
         
         grid_xanes2D_info_hs = GridspecLayout(3, 100,
                                     layout = {"border":"3px solid #FFCC00",
                                               "height":f'{0.18*(self.form_sz[0]-136)}px',
                                               "align_items":"flex-start",
                                               "justify_items":"flex-start"})
-        self.hs['L[0][3][1][1][1]_io_xanes2D_info_box'] = grid_xanes2D_info_hs
+        self.hs['IOXANES2DConfigInfo box'] = grid_xanes2D_info_hs
         grid_xanes2D_info_hs[0, 37:70] = widgets.HTML('<span style="color:red; font-size: 150%; font-weight: bold; align: center; background-color:rgb(135,206,250);">' + 'Config XANES2D Data Info' + '</span>')
-        self.hs['L[0][3][1][1][1][8]_io_xanes2D_info_config_html'] = grid_xanes2D_info_hs[0, 37:70]
+        self.hs['IOXANES2DConfigInfo label'] = grid_xanes2D_info_hs[0, 37:70]
         grid_xanes2D_info_hs[1, 0:25] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info0 path', 'value':'/img_xanes', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
-        self.hs['L[0][3][1][1][1][0]_io_xanes2D_info0_text'] = grid_xanes2D_info_hs[1, 0:25]
-        grid_xanes2D_info_hs[1, 25:50] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info1 path', 'value':'/Magnification', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
-        self.hs['L[0][3][1][1][1][1]_io_xanes2D_info1_text'] = grid_xanes2D_info_hs[1, 25:50]
-        grid_xanes2D_info_hs[1, 50:75] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info2 path', 'value':'/Pixel Size', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
-        self.hs['L[0][3][1][1][1][2]_io_xanes2D_info2_text'] = grid_xanes2D_info_hs[1, 50:75]
-        grid_xanes2D_info_hs[1, 75:] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info3 path', 'value':'X_eng', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
-        self.hs['L[0][3][1][1][1][3]_io_xanes2D_info3_text'] = grid_xanes2D_info_hs[1, 75:]
+        self.hs['IOXANES2DConfigInfo0 text'] = grid_xanes2D_info_hs[1, 0:25]
+        grid_xanes2D_info_hs[1, 25:50] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info1 path', 'value':'X_eng', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
+        self.hs['IOXANES2DConfigInfo1 text'] = grid_xanes2D_info_hs[1, 25:50]
+        grid_xanes2D_info_hs[1, 50:75] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info2 path', 'value':'/Magnification', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
+        self.hs['IOXANES2DConfigInfo2 text'] = grid_xanes2D_info_hs[1, 50:75]
+        grid_xanes2D_info_hs[1, 75:] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info3 path', 'value':'/Pixel Size', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
+        self.hs['IOXANES2DConfigInfo3 text'] = grid_xanes2D_info_hs[1, 75:]
         
         grid_xanes2D_info_hs[2, 0:25] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info4 path', 'value':'/note', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
-        self.hs['L[0][3][1][1][1][4]_io_xanes2D_info4_text'] = grid_xanes2D_info_hs[2, 0:25]
+        self.hs['IOXANES2DConfigInfo4 text'] = grid_xanes2D_info_hs[2, 0:25]
         grid_xanes2D_info_hs[2, 25:50] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info5 path', 'value':'/scan_time', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
-        self.hs['L[0][3][1][1][1][5]_io_xanes2D_info5_text'] = grid_xanes2D_info_hs[2, 25:50]
+        self.hs['IOXANES2DConfigInfo5 text'] = grid_xanes2D_info_hs[2, 25:50]
         grid_xanes2D_info_hs[2, 50:75] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info6 path', 'value':'', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
-        self.hs['L[0][3][1][1][1][6]_io_xanes2D_info6_text'] = grid_xanes2D_info_hs[2, 50:75]
+        self.hs['IOXANES2DConfigInfo6 text'] = grid_xanes2D_info_hs[2, 50:75]
         grid_xanes2D_info_hs[2, 75:] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info7 path', 'value':'', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
-        self.hs['L[0][3][1][1][1][7]_io_xanes2D_info7_text'] = grid_xanes2D_info_hs[2, 75:]
+        self.hs['IOXANES2DConfigInfo7 text'] = grid_xanes2D_info_hs[2, 75:]
         
-        self.hs['L[0][3][1][1][1]_io_xanes2D_info_box'].children = get_handles(self.hs, 'L[0][3][1][1][1]_io_xanes2D_info_box', -1)   
+        self.hs['IOXANES2DConfigInfo box'].children = [self.hs['IOXANES2DConfigInfo label'],
+                                                       self.hs['IOXANES2DConfigInfo0 text'],
+                                                       self.hs['IOXANES2DConfigInfo1 text'],
+                                                       self.hs['IOXANES2DConfigInfo2 text'],
+                                                       self.hs['IOXANES2DConfigInfo3 text'],
+                                                       self.hs['IOXANES2DConfigInfo4 text'],
+                                                       self.hs['IOXANES2DConfigInfo5 text'],
+                                                       self.hs['IOXANES2DConfigInfo6 text'],
+                                                       self.hs['IOXANES2DConfigInfo7 text'],]
         
-        self.hs['L[0][3][1][1]_io_xanes2D_config_box'].children = get_handles(self.hs, 'L[0][3][1][1]_io_xanes2D_config_box', -1)
+        self.hs['IOXANES2DConfig box'].children = [self.hs['IOXANES2DConfigData box'],
+                                                   self.hs['IOXANES2DConfigInfo box']]
         ## ## ## ## xanes2D io config -- end
         
         ## ## ## ## xanes3D io config -- start 
-        self.hs['L[0][3][1][2]_io_xanes3D_config_box'] = create_widget('VBox', {'border':'3px solid #8855AA', 'width':f'{self.form_sz[1]-92}px', 'height':f'{0.31*(self.form_sz[0]-136)}px'})
+        self.hs['IOXANES3DConfig box'] = create_widget('VBox', {'border':'3px solid #8855AA', 'width':f'{self.form_sz[1]-92}px', 'height':f'{0.31*(self.form_sz[0]-136)}px'})
         
         grid_xanes3D_data_hs = GridspecLayout(2, 100,
                                     layout = {"border":"3px solid #FFCC00",
                                               "height":f'{0.12*(self.form_sz[0]-136)}px',
                                               "align_items":"flex-start",
                                               "justify_items":"flex-start"})
-        self.hs['L[0][3][1][2][0]_io_xanes3D_data_box'] = grid_xanes3D_data_hs
+        self.hs['IOXANES3DConfigData box'] = grid_xanes3D_data_hs
         grid_xanes3D_data_hs[0, 35:70] = widgets.HTML('<span style="color:red; font-size: 150%; font-weight: bold; align: center; background-color:rgb(135,206,250);">' + 'XANES3D File Data Structure' + '</span>')
-        self.hs['L[0][3][1][2][0][4]_io_xanes3D_data_config_html'] = grid_xanes3D_data_hs[0, 35:70]
+        self.hs['IOXANES3DConfigData label'] = grid_xanes3D_data_hs[0, 35:70]
         grid_xanes3D_data_hs[1, 0:25] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'data path', 'value':'/img_tomo', 'disabled':False, 'description_tooltip':'path to sample image data in h5 file', 'indent':False})
-        self.hs['L[0][3][1][2][0][0]_io_xanes3D_img_text'] = grid_xanes3D_data_hs[1, 0:25]
+        self.hs['IOXANES3DConfigDataImg text'] = grid_xanes3D_data_hs[1, 0:25]
         grid_xanes3D_data_hs[1, 25:50] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'flat path', 'value':'/img_bkg', 'disabled':False, 'description_tooltip':'path to flat (reference) image data in h5 file', 'indent':False})
-        self.hs['L[0][3][1][2][0][1]_io_xanes3D_flat_text'] = grid_xanes3D_data_hs[1, 25:50]
+        self.hs['IOXANES3DConfigDataFlat text'] = grid_xanes3D_data_hs[1, 25:50]
         grid_xanes3D_data_hs[1, 50:75] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'dark path', 'value':'/img_dark', 'disabled':False, 'description_tooltip':'path to dark image data in h5 file', 'indent':False})
-        self.hs['L[0][3][1][2][0][2]_io_xanes3D_dark_text'] = grid_xanes3D_data_hs[1, 50:75]
+        self.hs['IOXANES3DConfigDataDark text'] = grid_xanes3D_data_hs[1, 50:75]
         grid_xanes3D_data_hs[1, 75:100] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'eng path', 'value':'/X_eng', 'disabled':False, 'description_tooltip':'path to x-ray energy in h5 file', 'indent':False})
-        self.hs['L[0][3][1][2][0][3]_io_xanes3D_eng_text'] = grid_xanes3D_data_hs[1, 75:100]
+        self.hs['IOXANES3DConfigDataEng text'] = grid_xanes3D_data_hs[1, 75:100]
         
-        self.hs['L[0][3][1][2][0]_io_xanes3D_data_box'].children = get_handles(self.hs, 'L[0][3][1][2][0]_io_xanes3D_data_box', -1)
+        self.hs['IOXANES3DConfigData box'].children = [self.hs['IOXANES3DConfigData label'],
+                                                       self.hs['IOXANES3DConfigDataImg text'],
+                                                       self.hs['IOXANES3DConfigDataFlat text'],
+                                                       self.hs['IOXANES3DConfigDataDark text'],
+                                                       self.hs['IOXANES3DConfigDataEng text']]
         
         grid_xanes3D_info_hs = GridspecLayout(3, 100,
                                     layout = {"border":"3px solid #FFCC00",
                                               "height":f'{0.18*(self.form_sz[0]-136)}px',
                                               "align_items":"flex-start",
                                               "justify_items":"flex-start"})
-        self.hs['L[0][3][1][2][1]_io_xanes3D_info_box'] = grid_xanes3D_info_hs
+        self.hs['IOXANES3DConfigInfo box'] = grid_xanes3D_info_hs
         grid_xanes3D_info_hs[0, 37:70] = widgets.HTML('<span style="color:red; font-size: 150%; font-weight: bold; align: center; background-color:rgb(135,206,250);">' + 'Config XANES3D Data Info' + '</span>')
-        self.hs['L[0][3][1][2][1][8]_io_xanes3D_info_config_html'] = grid_xanes3D_info_hs[0, 37:70]
+        self.hs['IOXANES3DConfigInfo label'] = grid_xanes3D_info_hs[0, 37:70]
         grid_xanes3D_info_hs[1, 0:25] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info0 path', 'value':'/img_tomo', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
-        self.hs['L[0][3][1][2][1][0]_io_xanes3D_info0_text'] = grid_xanes3D_info_hs[1, 0:25]
+        self.hs['IOXANES3DConfigInfo0 text'] = grid_xanes3D_info_hs[1, 0:25]
         grid_xanes3D_info_hs[1, 25:50] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info1 path', 'value':'/angle', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
-        self.hs['L[0][3][1][2][1][1]_io_xanes3D_info1_text'] = grid_xanes3D_info_hs[1, 25:50]
+        self.hs['IOXANES3DConfigInfo1 text'] = grid_xanes3D_info_hs[1, 25:50]
         grid_xanes3D_info_hs[1, 50:75] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info2 path', 'value':'/Magnification', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
-        self.hs['L[0][3][1][2][1][2]_io_xanes3D_info2_text'] = grid_xanes3D_info_hs[1, 50:75]
+        self.hs['IOXANES3DConfigInfo2 text'] = grid_xanes3D_info_hs[1, 50:75]
         grid_xanes3D_info_hs[1, 75:] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info3 path', 'value':'/Pixel Size', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
-        self.hs['L[0][3][1][2][1][3]_io_xanes3D_info3_text'] = grid_xanes3D_info_hs[1, 75:]
+        self.hs['IOXANES3DConfigInfo3 text'] = grid_xanes3D_info_hs[1, 75:]
         
         grid_xanes3D_info_hs[2, 0:25] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info4 path', 'value':'/X_eng', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
-        self.hs['L[0][3][1][2][1][4]_io_xanes3D_info4_text'] = grid_xanes3D_info_hs[2, 0:25]
+        self.hs['IOXANES3DConfigInfo4 text'] = grid_xanes3D_info_hs[2, 0:25]
         grid_xanes3D_info_hs[2, 25:50] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info5 path', 'value':'/note', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
-        self.hs['L[0][3][1][2][1][5]_io_xanes3D_info5_text'] = grid_xanes3D_info_hs[2, 25:50]
+        self.hs['IOXANES3DConfigInfo5 text'] = grid_xanes3D_info_hs[2, 25:50]
         grid_xanes3D_info_hs[2, 50:75] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info6 path', 'value':'/scan_time', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
-        self.hs['L[0][3][1][2][1][6]_io_xanes3D_info6_text'] = grid_xanes3D_info_hs[2, 50:75]
+        self.hs['IOXANES3DConfigInfo6 text'] = grid_xanes3D_info_hs[2, 50:75]
         grid_xanes3D_info_hs[2, 75:] = create_widget('Text', {'width':f'{0.23*(self.form_sz[1]-86)}px'}, **{'description':'info7 path', 'value':'', 'disabled':False, 'description_tooltip':'path to a field in h5 file which information will be display in "Data Info"', 'indent':False})
-        self.hs['L[0][3][1][2][1][7]_io_xanes3D_info7_text'] = grid_xanes3D_info_hs[2, 75:]
+        self.hs['IOXANES3DConfigInfo7 text'] = grid_xanes3D_info_hs[2, 75:]
         
-        self.hs['L[0][3][1][2][1]_io_xanes3D_info_box'].children = get_handles(self.hs, 'L[0][3][1][2][1]_io_xanes3D_info_box', -1)
+        self.hs['IOXANES3DConfigInfo box'].children = [self.hs['IOXANES3DConfigInfo label'],
+                                                       self.hs['IOXANES3DConfigInfo0 text'],
+                                                       self.hs['IOXANES3DConfigInfo1 text'],
+                                                       self.hs['IOXANES3DConfigInfo2 text'],
+                                                       self.hs['IOXANES3DConfigInfo3 text'],
+                                                       self.hs['IOXANES3DConfigInfo4 text'],
+                                                       self.hs['IOXANES3DConfigInfo5 text'],
+                                                       self.hs['IOXANES3DConfigInfo6 text'],
+                                                       self.hs['IOXANES3DConfigInfo7 text']]
         
-        self.hs['L[0][3][1][2]_io_xanes3D_config_box'].children = get_handles(self.hs, 'L[0][3][1][2]_io_xanes3D_config_box', -1)
+        self.hs['IOXANES3DConfig box'].children = [self.hs['IOXANES3DConfigData box'],
+                                                   self.hs['IOXANES3DConfigInfo box']]
         ## ## ## ## xanes3D io config -- end
         
         ## ## ## ## confirm -- start
@@ -296,19 +353,31 @@ class io_config_gui():
                                               "height":f'{0.06*(self.form_sz[0]-136)}px',
                                               "align_items":"flex-start",
                                               "justify_items":"flex-start"})
-        self.hs['L[0][3][1][3]_io_confirm_box'] = grid_confirm_hs
+        self.hs['IOCfm box'] = grid_confirm_hs
         grid_confirm_hs[0, 44:60] = create_widget('Button', {'width':f'{0.15*(self.form_sz[1]-86)}px', "height":f'{0.045*(self.form_sz[0]-136)}px'}, **{'description':'Confirm', 'disabled':False})
-        self.hs['L[0][3][1][3][0]_io_confirm_button'] = grid_confirm_hs[0, 44:60]
-        self.hs['L[0][3][1][3][0]_io_confirm_button'].style.button_color = 'darkviolet'
+        self.hs['IOCfm btn'] = grid_confirm_hs[0, 44:60]
+        self.hs['IOCfm btn'].style.button_color = 'darkviolet'
         
-        self.hs['L[0][3][1][3][0]_io_confirm_button'].on_click(self.L0_3_1_3_0_io_confirm_button_click)
-        self.hs['L[0][3][1][3]_io_confirm_box'].children = get_handles(self.hs, 'L[0][3][1][3]_io_confirm_box', -1)
+        self.hs['IOCfm btn'].on_click(self.io_cfm_btn_clk)
+        self.hs['IOCfm box'].children = [self.hs['IOCfm btn']]
         ## ## ## ## confirm -- end
         
-        self.hs['L[0][3][1]_io_config_form'].children = get_handles(self.hs, 'L[0][3][1]_io_config_form', -1)
+        self.hs['IOConfig form'].children = [self.hs['IOTomoConfig box'],
+                                             self.hs['IOXANES2DConfig box'],
+                                             self.hs['IOXANES3DConfig box'],
+                                             self.hs['IOCfm box']]
         ## ## ## structured h5 -- end
-        
-    def L0_3_1_3_0_io_confirm_button_click(self, a):
+
+
+    def io_optn_chbx_chg(self, a):
+        # if a['owner'].value:
+        #     self.global_h.use_struc_h5_reader = True
+        # else:
+        #     self.global_h.use_struc_h5_reader = False
+        self.boxes_logics()
+
+
+    def io_cfm_btn_clk(self, a):
         save_io_config(self)
         with open(self.global_h.io_data_struc_tomo_cfg_file, 'r') as f:
             self.global_h.io_tomo_cfg = json.load(f)
@@ -321,37 +390,33 @@ class io_config_gui():
             self.global_h.xanes3D_gui.xanes3D_raw_fn_temp = self.global_h.io_xanes3D_cfg['structured_h5_reader']['tomo_raw_fn_template']
             self.global_h.xanes3D_gui.xanes3D_recon_dir_temp = self.global_h.io_xanes3D_cfg['structured_h5_reader']['xanes3D_recon_dir_template']
             self.global_h.xanes3D_gui.xanes3D_recon_fn_temp = self.global_h.io_xanes3D_cfg['structured_h5_reader']['xanes3D_recon_fn_template']
-            
-    def L0_3_0_0_0_io_option_checkbox_change(self, a):
-        if a['owner'].value:
-            self.global_h.use_struc_h5_reader = True
-        else:
-            self.global_h.use_struc_h5_reader = False   
-        self.boxes_logics()
-    
-    def L0_3_0_1_0_1_io_spec_tomo_reader_button_click(self, a):
+
+
+    def io_spec_tomo_rdr_btn_clk(self, a):
         if len(a.files[0]) != 0:
-            self.hs['L[0][3][0][1][0][0]_io_spec_tomo_reader_text'].value = a.files[0]        
+            self.hs['IOSpecTomoRdr text'].value = a.files[0]        
             save_io_config(self)
             with open(self.global_h.io_data_struc_tomo_cfg_file, 'r') as f:
                 self.global_h.io_tomo_cfg = json.load(f)
         
     
-    def L0_3_0_1_0_3_io_spec_xanes2D_reader_button_click(self, a):
+    def io_spec_xanes2D_rdr_btn_clk(self, a):
         if len(a.files[0]) != 0:
-            self.hs['L[0][3][0][1][0][2]_io_spec_xanes2D_reader_text'].value = a.files[0]
+            self.hs['IOSpecXANES2DRdr text'].value = a.files[0]
             save_io_config(self)
             with open(self.global_h.io_data_struc_xanes2D_cfg_file, 'r') as f:
                 self.global_h.io_xanes2D_cfg = json.load(f)
-    
-    def L0_3_0_1_0_5_io_spec_xanes3D_reader_button_click(self, a):
+
+
+    def io_spec_xanes3D_rdr_btn_clk(self, a):
         if len(a.files[0]) != 0:
-            self.hs['L[0][3][0][1][0][4]_io_spec_xanes3D_reader_text'].value = a.files[0]
+            self.hs['IOSpecXANES3DRdr text'].value = a.files[0]
             save_io_config(self)
             with open(self.global_h.io_data_struc_xanes3D_cfg_file, 'r') as f:
                 self.global_h.io_xanes3D_cfg = json.load(f)
-    
-    def L0_3_2_0_0_6_fn_def_patt_confirm_button_click(self, a):
+
+
+    def io_fn_def_patn_cfm_btn_clk(self, a):
         save_io_config(self)
         with open(self.global_h.io_data_struc_tomo_cfg_file, 'r') as f:
             self.global_h.io_tomo_cfg = json.load(f)

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Thu Feb 20 17:19:17 2020
@@ -39,9 +39,14 @@ class txm_gui():
             self.ijui = self.ij.ui()
             self.ijui.showUI()
             self.ij.py.run_macro("""run("Brightness/Contrast...");""")
-            from jnius import autoclass
-            self.WindowManager = autoclass('ij.WindowManager')
-            self.ImagePlusClass = autoclass('ij.ImagePlus')
+            if hasattr(imagej, "__version__"):
+                self.WindowManager = self.ij.py.window_manager()
+                import scyjava as sj
+                self.ImagePlusClass = sj.jimport('ij.ImagePlus')
+            else:
+                from jnius import autoclass
+                self.WindowManager = autoclass('ij.WindowManager')
+                self.ImagePlusClass = autoclass('ij.ImagePlus')
         except Exception as e:
             print(e)
         self.hs = {}
@@ -49,11 +54,13 @@ class txm_gui():
         self.cwd = CWD
         tem = str(Path(os.path.dirname(os.path.abspath(inspect.getfile(trg)))).parent)
         self.tmp_dir = os.path.join(tem, 'tmp')
+        if not os.path.exists(self.tmp_dir):
+            os.makedirs(self.tmp_dir, mode=0x777)
         self.GUI_cfg_file = os.path.join(tem, 'config', 'analysis_tool_gui_cfg.json')
         self.io_data_struc_tomo_cfg_file = os.path.join(tem, 'config', 'io_tomo_h5_data_structure.json')
         self.io_data_struc_xanes2D_cfg_file = os.path.join(tem, 'config', 'io_xanes2D_h5_data_structure.json')
         self.io_data_struc_xanes3D_cfg_file = os.path.join(tem, 'config', 'io_xanes3D_h5_data_structure.json')
-        self.use_struc_h5_reader = True
+        # self.use_struc_h5_reader = True
 
         self.xanes2D_external_command_name = os.path.join(os.path.abspath(os.path.curdir), 'xanes2D_external_command.py')
         self.xanes3D_external_command_name = os.path.join(os.path.abspath(os.path.curdir), 'xanes3D_external_command.py')
@@ -69,7 +76,13 @@ class txm_gui():
                                      'xanes3D_analysis_viewer':{'ip':None,
                                                         'fiji_id':None},
                                      'analysis_viewer_z_plot_viewer':{'ip':None,
-                                                                      'fiji_id':None}}
+                                                                      'fiji_id':None},
+                                     'xanes3D_fit_jump_flt_viewer':{'ip':None,
+                                                                    'fiji_id':None},
+                                     'xanes3D_fit_thres_flt_viewer':{'ip':None,
+                                                                     'fiji_id':None},
+                                     'xanes3D_fit_maskit_viewer':{'ip':None,
+                                                                  'fiji_id':None}}
         self.xanes2D_fiji_windows = {'xanes2D_raw_img_viewer':{'ip':None,
                                                     'fiji_id':None},
                                      'xanes2D_mask_viewer':{'ip':None,
@@ -79,7 +92,13 @@ class txm_gui():
                                      'xanes2D_analysis_viewer':{'ip':None,
                                                         'fiji_id':None},
                                      'analysis_viewer_z_plot_viewer':{'ip':None,
-                                                                      'fiji_id':None}}
+                                                                      'fiji_id':None},
+                                     'xanes2D_fit_jump_flt_viewer':{'ip':None,
+                                                                    'fiji_id':None},
+                                     'xanes2D_fit_thres_flt_viewer':{'ip':None,
+                                                                     'fiji_id':None},
+                                     'xanes2D_fit_maskit_viewer':{'ip':None,
+                                                                  'fiji_id':None}}
         self.tomo_fiji_windows = {'tomo_raw_img_viewer':{'ip':None,
                                                          'fiji_id':None},
                                   'tomo_0&180_viewer':{'ip':None,
@@ -110,25 +129,28 @@ class txm_gui():
         #################################################################################################################
         # define top tab form
         layout = {'border':'5px solid #00FF00', 'width':f'{self.form_sz[1]}px', 'height':f'{self.form_sz[0]}px'}
-        self.hs['L[0]_top_tab_form'] = widgets.Tab()
-        self.hs['L[0]_top_tab_form'].layout = layout
+        self.hs['MainGUI form'] = widgets.Tab()
+        self.hs['MainGUI form'].layout = layout
 
         ## ## define, organize, and name sub-tabs
         layout = {'border':'3px solid #FFCC00', 'width':f'{self.form_sz[1]-46}px', 'height':f'{self.form_sz[0]-72}px'}
-        self.hs['L[0][0]_tomo_recon_tabs'] = widgets.Tab()
-        self.hs['L[0][1]_2D_xanes_tabs'] =  widgets.Tab()
-        self.hs['L[0][2]_3D_xanes_tabs'] =  widgets.Tab()
-        self.hs['L[0][3]_io_config_tabs'] =  widgets.Tab()
-        self.hs['L[0][0]_tomo_recon_tabs'].layout = layout
-        self.hs['L[0][1]_2D_xanes_tabs'].layout = layout
-        self.hs['L[0][2]_3D_xanes_tabs'].layout = layout
-        self.hs['L[0][3]_io_config_tabs'].layout = layout
+        self.hs['TomoRecon tab'] = widgets.Tab()
+        self.hs['XANES2D tab'] =  widgets.Tab()
+        self.hs['XANES3D tab'] =  widgets.Tab()
+        self.hs['IOConfig tab'] =  widgets.Tab()
+        self.hs['TomoRecon tab'].layout = layout
+        self.hs['XANES2D tab'].layout = layout
+        self.hs['XANES3D tab'].layout = layout
+        self.hs['IOConfig tab'].layout = layout
 
-        self.hs['L[0]_top_tab_form'].children = get_handles(self.hs, 'L[0]_top_tab_form', -1)
-        self.hs['L[0]_top_tab_form'].set_title(0, 'TOMO RECON')
-        self.hs['L[0]_top_tab_form'].set_title(1, '2D XANES')
-        self.hs['L[0]_top_tab_form'].set_title(2, '3D XANES')
-        self.hs['L[0]_top_tab_form'].set_title(3, 'IO CONFIG')
+        self.hs['MainGUI form'].children = [self.hs['TomoRecon tab'],
+                                            self.hs['XANES2D tab'],
+                                            self.hs['XANES3D tab'],
+                                            self.hs['IOConfig tab']]
+        self.hs['MainGUI form'].set_title(0, 'TOMO RECON')
+        self.hs['MainGUI form'].set_title(1, '2D XANES')
+        self.hs['MainGUI form'].set_title(2, '3D XANES')
+        self.hs['MainGUI form'].set_title(3, 'IO CONFIG')
         
         #################################################################################################################
         #                                                                                                               #
@@ -137,12 +159,11 @@ class txm_gui():
         #################################################################################################################        
         self.io_config_gui = iocg.io_config_gui(self, form_sz=self.form_sz)
         self.io_config_gui.build_gui()
-        self.hs['L[0][3]_io_config_tabs'].children = [self.io_config_gui.hs['L[0][3][0]_io_option_form'],
-                                                      self.io_config_gui.hs['L[0][3][2]_fn_pattern_form'],
-                                                      self.io_config_gui.hs['L[0][3][1]_io_config_form']]
-        self.hs['L[0][3]_io_config_tabs'].set_title(0, 'IO Option')
-        self.hs['L[0][3]_io_config_tabs'].set_title(1, 'Default Fn Pattern')
-        self.hs['L[0][3]_io_config_tabs'].set_title(2, 'Struct h5 IO')
+        self.hs['IOConfig tab'].children = [self.io_config_gui.hs['IOOptn form'],
+                                            self.io_config_gui.hs['IOConfig form']]
+        self.hs['IOConfig tab'].set_title(0, 'IO Option')
+        # self.hs['IOConfig tab'].set_title(1, 'Default Fn Pattern')
+        self.hs['IOConfig tab'].set_title(1, 'Struct h5 IO')
         
         try:
             f = open(self.io_data_struc_tomo_cfg_file, 'r')
@@ -175,10 +196,10 @@ class txm_gui():
         self.tomo_recon_gui = trg.tomo_recon_gui(self, form_sz=self.form_sz)
         self.tomo_recon_gui.build_gui()
 
-        self.hs['L[0][0]_tomo_recon_tabs'].children = [self.tomo_recon_gui.hs['L[0][0][0]_config_input_form'],
-                                                       self.tomo_recon_gui.hs['L[0][0][1]_filter&recon_form']]
-        self.hs['L[0][0]_tomo_recon_tabs'].set_title(0, 'Data Config')
-        self.hs['L[0][0]_tomo_recon_tabs'].set_title(1, 'Recon')
+        self.hs['TomoRecon tab'].children = [self.tomo_recon_gui.hs['Config&Input form'],
+                                             self.tomo_recon_gui.hs["Filter&Recon tab"]]
+        self.hs['TomoRecon tab'].set_title(0, 'Config')
+        self.hs['TomoRecon tab'].set_title(1, 'Recon')
 
         #################################################################################################################
         #                                                                                                               #
@@ -188,16 +209,16 @@ class txm_gui():
         self.xanes2D_gui = x2drg.xanes2D_tools_gui(self, form_sz=self.form_sz)
         self.xanes2D_gui.build_gui()
 
-        self.hs['L[0][1]_2D_xanes_tabs'].children = [self.xanes2D_gui.hs['L[0][1][0]_config_input_form'],
-                                                     self.xanes2D_gui.hs['L[0][1][1]_reg_setting_form'], 
-                                                     self.xanes2D_gui.hs['L[0][1][2]_reg&review_form'], 
-                                                     self.xanes2D_gui.hs['L[0][1][3]_fitting_form'],
-                                                     self.xanes2D_gui.hs['L[0][1][4]_analysis_form']]
-        self.hs['L[0][1]_2D_xanes_tabs'].set_title(0, 'Data Config')
-        self.hs['L[0][1]_2D_xanes_tabs'].set_title(1, 'Reg Config')
-        self.hs['L[0][1]_2D_xanes_tabs'].set_title(2, 'Reg Review')
-        self.hs['L[0][1]_2D_xanes_tabs'].set_title(3, 'Fitting')
-        self.hs['L[0][1]_2D_xanes_tabs'].set_title(4, 'Analysis')
+        self.hs['XANES2D tab'].children = [self.xanes2D_gui.hs['Config&Input form'],
+                                           self.xanes2D_gui.hs['RegSetting form'],
+                                           self.xanes2D_gui.hs['Reg&Rev form'],
+                                           self.xanes2D_gui.hs['Fitting form'],
+                                           self.xanes2D_gui.hs['Analysis form']]
+        self.hs['XANES2D tab'].set_title(0, 'Data Config')
+        self.hs['XANES2D tab'].set_title(1, 'Reg Config')
+        self.hs['XANES2D tab'].set_title(2, 'Reg Review')
+        self.hs['XANES2D tab'].set_title(3, 'Fitting')
+        self.hs['XANES2D tab'].set_title(4, 'Analysis')
         
         #################################################################################################################
         #                                                                                                               #
@@ -206,18 +227,18 @@ class txm_gui():
         #################################################################################################################        
         self.xanes3D_gui = x3drg.xanes3D_tools_gui(self, form_sz=self.form_sz)
         self.xanes3D_gui.build_gui()
-        self.hs['L[0][2]_3D_xanes_tabs'].children = [self.xanes3D_gui.hs['L[0][2][0]_config_input_form'], 
-                                                     self.xanes3D_gui.hs['L[0][2][1]_reg_setting_form'],
-                                                     self.xanes3D_gui.hs['L[0][2][2]_reg&review_form'],
-                                                     self.xanes3D_gui.hs['L[0][2][3]_fitting_form'],
-                                                     self.xanes3D_gui.hs['L[0][2][4]_analysis_form']]
-        self.hs['L[0][2]_3D_xanes_tabs'].set_title(0, 'Data Config')
-        self.hs['L[0][2]_3D_xanes_tabs'].set_title(1, 'Reg Config')
-        self.hs['L[0][2]_3D_xanes_tabs'].set_title(2, 'Reg Review')
-        self.hs['L[0][2]_3D_xanes_tabs'].set_title(3, 'Fitting')
-        self.hs['L[0][2]_3D_xanes_tabs'].set_title(4, 'Analysis')
+        self.hs['XANES3D tab'].children = [self.xanes3D_gui.hs['Config&Input form'],
+                                           self.xanes3D_gui.hs['RegSetting form'],
+                                           self.xanes3D_gui.hs['Reg&Rev form'],
+                                           self.xanes3D_gui.hs['Fitting form'],
+                                           self.xanes3D_gui.hs['Analysis form']]
+        self.hs['XANES3D tab'].set_title(0, 'Data Config')
+        self.hs['XANES3D tab'].set_title(1, 'Reg Config')
+        self.hs['XANES3D tab'].set_title(2, 'Reg Review')
+        self.hs['XANES3D tab'].set_title(3, 'Fitting')
+        self.hs['XANES3D tab'].set_title(4, 'Analysis')
         
-        display(self.hs['L[0]_top_tab_form'])
+        display(self.hs['MainGUI form'])
 
 
     
