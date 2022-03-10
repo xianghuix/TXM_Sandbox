@@ -2007,7 +2007,6 @@ class tomo_recon_gui():
         else:
             print("Cannot read metadata from the available files with the pre-defined Tomo Data Info Configuration.")
             self.tomo_filepath_configured = False
-        self.tomo_cen_list_file = None
         self.tomo_data_configured = False
         self.recon_finish = -1
         self.boxes_logic()
@@ -2065,6 +2064,8 @@ class tomo_recon_gui():
 
     def L0_0_0_1_0_1_0_5_use_config_checkbox_change(self, a):
         self.tomo_use_read_config = a['owner'].value
+        if not self.tomo_use_read_config:
+            self.tomo_cen_list_file = None
         self.tomo_data_configured = False
         self.recon_finish = -1
         self.boxes_logic()

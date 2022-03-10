@@ -1697,11 +1697,11 @@ class xanes3D_tools_gui():
         self.hs['VisImgViewAlign box'] = widgets.HBox()
         self.hs['VisImgViewAlign box'].layout = layout
 
-        layout = {'width':'40%', 'height':'90%'}
+        layout = {'width':'35%', 'height':'90%'}
         self.hs['VisImgViewAlign4thDim sldr'] = widgets.IntSlider(description='z', value =0, min = 0, disabled=True,
                                                                   description_tooltip='Select one slice in the fourth dimension')
         self.hs['VisImgViewAlign4thDim sldr'].layout = layout
-        layout = {'width':'40%', 'height':'90%'}
+        layout = {'width':'35%', 'height':'90%'}
         self.hs['VisImgViewAlignSli sldr'] = widgets.IntSlider(description='E', disabled=True)
         self.hs['VisImgViewAlignSli sldr'].layout = layout
         layout = {'width':'20%', 'height':'90%'}
@@ -1711,7 +1711,8 @@ class xanes3D_tools_gui():
         self.hs['VisImgViewAlign4thDim sldr'].observe(self.L0_2_2_2_1_2_visualize_view_alignment_4th_dim_slider, names='value')
         self.hs['VisImgViewAlignSli sldr'].observe(self.L0_2_2_2_1_3_visualize_view_alignment_slice_slider, names='value')
         self.hs['VisImgViewAlign box'].children = [self.hs['VisImgViewAlign4thDim sldr'],
-                                                   self.hs['VisImgViewAlignSli sldr']]
+                                                   self.hs['VisImgViewAlignSli sldr'],
+                                                   self.hs['VisImgViewAlignEng text']]
         ## ## ## ## ## define slice region and view slice cuts -- end
 
         ## ## ## ## ## basic spectroscopic visualization -- start
