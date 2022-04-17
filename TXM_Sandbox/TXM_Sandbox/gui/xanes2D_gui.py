@@ -3035,8 +3035,8 @@ class xanes2D_tools_gui():
             self.hs['CfmRevRlt text'].value = 'reg review is not completed yet ...'
             idx = []
             offset = []
-            for ii in sorted(self.xanes3D_review_shift_dict.keys()):
-                offset.append(self.xanes3D_review_shift_dict[ii][0])
+            for ii in sorted(self.xanes_review_shift_dict.keys()):
+                offset.append(self.xanes_review_shift_dict[ii][0])
                 idx.append(int(ii))
             plt.figure(1)
             plt.plot(idx, offset, 'b+')
