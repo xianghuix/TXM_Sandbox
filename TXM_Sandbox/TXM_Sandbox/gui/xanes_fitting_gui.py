@@ -2634,7 +2634,7 @@ class xanes_fitting_gui():
             code[ln] = f"                    if jj == 'wl_fit_err':";ln += 1
             code[ln] = f"                        _g12[jj][:] = np.float32(xana.model['wl']['fit_rlt'][1].reshape(*xana.spec.shape[1:]))[:]";ln += 1
             code[ln] = f"                    if jj == 'norm_spec':"; ln += 1
-            code[ln] = f"                        _g12[jj][ii] = np.float32(xana.norm_spec)[:]"; ln += 1
+            code[ln] = f"                        _g12[jj][:, ii, :, :] = np.float32(xana.norm_spec)[:]"; ln += 1
             code[ln] = f"                    if jj == 'lcf_fit':"; ln += 1
             code[ln] = f"                        _g12[jj][ii] = np.float32(xana.lcf_fit)[:]"; ln += 1
             code[ln] = f"                    if jj == 'lcf_fit_err':"; ln += 1
@@ -2720,7 +2720,7 @@ class xanes_fitting_gui():
             code[ln] = f"                    if jj == 'wl_fit_err':";ln += 1
             code[ln] = f"                        _g12[jj][:] = np.float32(xana.model['wl']['fit_rlt'][1].reshape(*xana.spec.shape[1:]))[:]";ln += 1
             code[ln] = f"                    if jj == 'norm_spec':"; ln += 1
-            code[ln] = f"                        _g12[jj][ii] = np.float32(xana.norm_spec)[:]"; ln += 1
+            code[ln] = f"                        _g12[jj][:, ii, :, :] = np.float32(xana.norm_spec)[:]"; ln += 1
             code[ln] = f"                    if jj == 'lcf_fit':"; ln += 1
             code[ln] = f"                        _g12[jj][ii] = np.float32(xana.lcf_fit)[:]"; ln += 1
             code[ln] = f"                    if jj == 'lcf_fit_err':"; ln += 1
