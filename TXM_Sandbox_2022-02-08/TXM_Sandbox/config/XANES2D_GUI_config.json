@@ -1,0 +1,169 @@
+{"2DXANES_GUI": {
+    "Config&Input form": {
+        "SelFile&Path box": {
+            "SelFile&PathTitle box": {
+                "SelFile&PathTitle label": null
+            },
+            "SelRaw box":{
+                "SelRawH5Path text": null,
+                "SelRawH5Path btn": null
+            },
+            "SelSaveTrial box": {
+                "SelSaveTrial text": null,
+                "SelSaveTrial btn": null
+            },
+            "SelFile&PathComfirm box": {
+                "CfmFile&Path text": null,
+                "CfmFile&Path btn": null,
+                "FilePathOptions drpdn": null
+            }
+        },
+        "DataConfig tab": {
+            "ConfigData box": {
+                "ConfigDataTitle box": {
+                    "ConfigDataTitle text": null
+                },
+                "DataPrepOptions box": {
+                    "DataPrepOptions box1": {
+                        "IsRaw checkbox": {
+                            "IsRaw checkbox": null,
+                            "NormScale text": null,
+                            "ConfigDataLoadImg btn": null
+                        }
+                    }
+                },
+                "EngRange box": {
+                    "EngPointsRange sldr": null,
+                    "EngStart text": null,
+                    "EngEnd text":null
+                },
+                "Fiji box": {
+                    "FijiRawImgPrev chbx": null,
+                    "FijiEngId sldr": null,
+                    "FijiClose btn": null
+                },
+                "ConfigDataCfm box": {
+                    "CfmConfigData text": null,
+                    "CfmConfigData btn": null
+                }
+            },
+            "DataInfo box": {
+                "DataInfo text": null
+            }
+        }
+    },
+    "RegSetting form": {
+        "2DRoi box": {
+            "2DRoiTitle box": {
+                "2DRoiTitle text": null
+            },
+            "2DRoiDefine box": {
+                "2DRoiX sldr": null,
+                "2DRoiY sldr": null
+            },
+            "2DRoiCfm box": {
+                "CfmRoi text": null,
+                "CfmRoi btn": null
+            }
+        },
+        "ConfigRegParams box": {
+            "ConfigRegParamsTitle box": {
+                "ConfigRegParamsTitle text": null
+            },
+            "Fiji&Anchor box": {
+                "FijiMaskViewer chbx": null,
+                "UseChunk chbx": null,
+                "AnchorId sldr": null,
+                "ChunkSz sldr": null
+            },
+            "MaskOptions box": {
+                "UseMask chbx": null,
+                "MaskThres sldr": null,
+                "MaskDilation sldr": null
+            },
+            "SliSearch&ChunkSz box": {
+                "UseSmooth chbx": null,
+                "SmoothSigma text": null,
+                "RegMethod drpdn": null,
+                "RefMode drpdn": null
+            },
+            "MrtvOptions box": {
+                "MrtvLevel text": null,
+                "MrtvWz text": null,
+                "MrtvSubpixelSrch drpdn": null,
+                "MrtvSubpixelWz text": null,
+                "MrtvSubpixelKernel text": null
+            },
+            "ConfigRegParamsCfm box": {
+                "CfmRegParams text": null,
+                "CfmRegParams btn": null
+            }
+        },
+        "RunReg box": {
+            "RunRegTitle box": {
+                "RunRegTitle text": null
+            },
+            "RunRegCfm box": {
+                "RunReg text": null,
+                "RunReg btn": null
+            },
+            "RunRegProgress box": {
+                "RunRegProgress bar": null
+            }
+        }
+    },
+    "Reg&Review form": {
+        "RevRegRlt box": {
+            "RevRegRltTitle box": {
+                "RevRegRltTitle text": null
+            },
+            "ReadAlignFile box": {
+                "ReadAlign chbx": null,
+                "ReadAlign btn": null
+            },
+            "RegPair box": {
+                "RegPair sldr": null,
+                "RegPairBad btn": null
+            },
+            "CorrectShift box": {
+                "XShift text": null,
+                "YShift text": null,
+                "Record btn": null
+            },
+            "RevRegRltComfirm box": {
+                "CfmRevRlt text": null,
+                "CfmRevRlt btn": null
+            }
+        },
+        "AlignImg box": {
+            "AlignImgTitle box": {
+                "AlignImgTitle text": null
+            },
+            "AlignImgComfirm box": {
+                "AlignImg text": null,
+                "AlignImg btn": null
+            },
+            "AlignProgress box": {
+                "AlignProgress bar": null
+            }
+        },
+        "VisImg box": {
+            "VisImgTitle box": {
+                "VisImgTitle text": null
+            },
+            "Vis&Cfm box": {
+                "Vis sldr": null,
+                "VisEng text": null,
+                "VisR&C chbx": null,
+                "SpecInRoi btn": null
+            }
+        }
+    },
+    "Fitting form": {
+
+    },
+    "Analysis form": {
+
+    }
+}
+}
