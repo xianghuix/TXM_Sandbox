@@ -1274,6 +1274,8 @@ class xanes_fitting_gui():
             if self.parent_h.xanes_fit_type == 'wl':
                 boxes = ['FitItem tab']
                 enable_disable_boxes(self.hs, boxes, disabled=True, level=-1)
+                boxes = ['FitSavSetting box']
+                enable_disable_boxes(self.hs, boxes, disabled=False, level=-1)
             else:
                 boxes = ['FitItem tab']
                 enable_disable_boxes(self.hs, boxes, disabled=False, level=-1)

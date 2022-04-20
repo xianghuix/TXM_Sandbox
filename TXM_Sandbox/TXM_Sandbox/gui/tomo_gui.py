@@ -40,7 +40,7 @@ FILTER_PARAM_DICT = OrderedDict(
      "remove cupping": {6: ["cc", 0.5,
                             "cc: constant that is subtracted from the logrithm of the normalized images. This is for correcting the cup-like background in the case when the sample size is much larger than the image view"]},
 
-     "stripe_removal: vo": {6: ["snr", 3, "snr: signal-to-noise ratio"],
+     "stripe_removal: vo": {6: ["snr", 4, "snr: signal-to-noise ratio"],
                             7: ["la_size", 81, "la_size: large ring's width in pixel"],
                             8: ["sm_size", 21, "sm_size: small ring's width in pixel"]},
 
@@ -54,6 +54,10 @@ FILTER_PARAM_DICT = OrderedDict(
                                           "gaus4"], "wname: wavelet name"],
                             6: ["level", 6, "level: how many of level of wavelet transforms"],
                             7: ["sigma", 2, "sigma: sigam of gaussian filter in image Fourier space"]},
+
+     "denoise: median": {6: ["size angle", 1, "median kernel size along rotation angle axis"],
+                         7: ["size y", 5, "median kernel size along projection image vertical axis"],
+                         8: ["size x", 5, "median kernel size along projection image horizontal axis"]},
 
      "denoise: wiener": {0: ["reg", ["None"],
                              "reg: The regularisation operator. The Laplacian by default. It can be an impulse response or a transfer function, as for the psf"],

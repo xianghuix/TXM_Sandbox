@@ -2110,12 +2110,12 @@ class xanes3D_tools_gui():
                     self.xanes_fit_edge_0p5_fit_s = tem[5]
                     self.xanes_fit_edge_0p5_fit_e = tem[6]
 
-                    self.hs['VisImgViewAlignSli sldr'].value = 0
+                    self.hs['VisImgViewAlignSli sldr'].value = 1
                     self.hs['VisImgViewAlign4thDim sldr'].value = 0
                     self.hs['VisImgViewAlignOptn drpdn'].value = 'x-y-E'
                     self.hs['VisImgViewAlignSli sldr'].description = 'E'
-                    self.hs['VisImgViewAlignSli sldr'].max = self.xanes_fit_data_shape[0]-1
-                    self.hs['VisImgViewAlignSli sldr'].min = 0
+                    self.hs['VisImgViewAlignSli sldr'].max = self.xanes_fit_data_shape[0]
+                    self.hs['VisImgViewAlignSli sldr'].min = 1
                     self.hs['VisImgViewAlign4thDim sldr'].description = 'z'
                     self.hs['VisImgViewAlign4thDim sldr'].max = self.xanes_fit_data_shape[1]-1
                     self.hs['VisImgViewAlign4thDim sldr'].min = 0
@@ -2207,12 +2207,12 @@ class xanes3D_tools_gui():
                 self.xanes_fit_edge_0p5_fit_s = tem[5]
                 self.xanes_fit_edge_0p5_fit_e = tem[6]
 
-                self.hs['VisImgViewAlignSli sldr'].value = 0
+                self.hs['VisImgViewAlignSli sldr'].value = 1
                 self.hs['VisImgViewAlign4thDim sldr'].value = 0
                 self.hs['VisImgViewAlignOptn drpdn'].value = 'x-y-E'
                 self.hs['VisImgViewAlignSli sldr'].description = 'E'
-                self.hs['VisImgViewAlignSli sldr'].max = self.xanes_fit_data_shape[0]-1
-                self.hs['VisImgViewAlignSli sldr'].min = 0
+                self.hs['VisImgViewAlignSli sldr'].max = self.xanes_fit_data_shape[0]
+                self.hs['VisImgViewAlignSli sldr'].min = 1
                 self.hs['VisImgViewAlign4thDim sldr'].description = 'z'
                 self.hs['VisImgViewAlign4thDim sldr'].max = self.xanes_fit_data_shape[1]-1
                 self.hs['VisImgViewAlign4thDim sldr'].min = 0
@@ -2889,12 +2889,12 @@ class xanes3D_tools_gui():
             self.xanes_fit_edge_0p5_fit_s = tem[5]
             self.xanes_fit_edge_0p5_fit_e = tem[6]
 
-            self.hs['VisImgViewAlignSli sldr'].value = 0
+            self.hs['VisImgViewAlignSli sldr'].value = 1
             self.hs['VisImgViewAlign4thDim sldr'].value = 0
             self.hs['VisImgViewAlignOptn drpdn'].value = 'x-y-E'
             self.hs['VisImgViewAlignSli sldr'].description = 'E'
-            self.hs['VisImgViewAlignSli sldr'].max = self.xanes_fit_data_shape[0]-1
-            self.hs['VisImgViewAlignSli sldr'].min = 0
+            self.hs['VisImgViewAlignSli sldr'].max = self.xanes_fit_data_shape[0]
+            self.hs['VisImgViewAlignSli sldr'].min = 1
             self.hs['VisImgViewAlign4thDim sldr'].description = 'z'
             self.hs['VisImgViewAlign4thDim sldr'].max = self.xanes_fit_data_shape[1]-1
             self.hs['VisImgViewAlign4thDim sldr'].min = 0
@@ -2923,10 +2923,10 @@ class xanes3D_tools_gui():
         self.xanes_fit_view_option = a['owner'].value
         with h5py.File(self.xanes_save_trial_reg_filename, 'r') as f:
             if self.xanes_fit_view_option == 'x-y-E':
-                self.hs['VisImgViewAlignSli sldr'].value = 0
+                self.hs['VisImgViewAlignSli sldr'].value = 1
                 self.hs['VisImgViewAlignSli sldr'].description = 'E'
-                self.hs['VisImgViewAlignSli sldr'].max = self.xanes_fit_data_shape[0]-1
-                self.hs['VisImgViewAlignSli sldr'].min = 0
+                self.hs['VisImgViewAlignSli sldr'].max = self.xanes_fit_data_shape[0]
+                self.hs['VisImgViewAlignSli sldr'].min = 1
                 self.hs['VisImgViewAlign4thDim sldr'].value = 0
                 self.hs['VisImgViewAlign4thDim sldr'].description = 'z'
                 self.hs['VisImgViewAlign4thDim sldr'].max = self.xanes_fit_data_shape[1]-1
@@ -2934,10 +2934,10 @@ class xanes3D_tools_gui():
                 self.xanes_aligned_data = 0
                 self.xanes_aligned_data = f['/registration_results/reg_results/registered_xanes3D'][:, 0, :, :]
             elif self.xanes_fit_view_option == 'y-z-E':
-                self.hs['VisImgViewAlignSli sldr'].value = 0
+                self.hs['VisImgViewAlignSli sldr'].value = 1
                 self.hs['VisImgViewAlignSli sldr'].description = 'E'
-                self.hs['VisImgViewAlignSli sldr'].max = self.xanes_fit_data_shape[0]-1
-                self.hs['VisImgViewAlignSli sldr'].min = 0
+                self.hs['VisImgViewAlignSli sldr'].max = self.xanes_fit_data_shape[0]
+                self.hs['VisImgViewAlignSli sldr'].min = 1
                 self.hs['VisImgViewAlign4thDim sldr'].value = 0
                 self.hs['VisImgViewAlign4thDim sldr'].description = 'x'
                 self.hs['VisImgViewAlign4thDim sldr'].max = self.xanes_fit_data_shape[3]-1
@@ -2945,10 +2945,10 @@ class xanes3D_tools_gui():
                 self.xanes_aligned_data = 0
                 self.xanes_aligned_data = f['/registration_results/reg_results/registered_xanes3D'][:, :, :, 0]
             elif self.xanes_fit_view_option == 'z-x-E':
-                self.hs['VisImgViewAlignSli sldr'].value = 0
+                self.hs['VisImgViewAlignSli sldr'].value = 1
                 self.hs['VisImgViewAlignSli sldr'].description = 'E'
-                self.hs['VisImgViewAlignSli sldr'].max = self.xanes_fit_data_shape[0]-1
-                self.hs['VisImgViewAlignSli sldr'].min = 0
+                self.hs['VisImgViewAlignSli sldr'].max = self.xanes_fit_data_shape[0]
+                self.hs['VisImgViewAlignSli sldr'].min = 1
                 self.hs['VisImgViewAlign4thDim sldr'].value = 0
                 self.hs['VisImgViewAlign4thDim sldr'].description = 'y'
                 self.hs['VisImgViewAlign4thDim sldr'].max = self.xanes_fit_data_shape[2]-1
@@ -2956,10 +2956,10 @@ class xanes3D_tools_gui():
                 self.xanes_aligned_data = 0
                 self.xanes_aligned_data = f['/registration_results/reg_results/registered_xanes3D'][:, :, 0, :]
             elif self.xanes_fit_view_option == 'x-y-z':
-                self.hs['VisImgViewAlignSli sldr'].value = 0
+                self.hs['VisImgViewAlignSli sldr'].value = 1
                 self.hs['VisImgViewAlignSli sldr'].description = 'z'
-                self.hs['VisImgViewAlignSli sldr'].max = self.xanes_fit_data_shape[1]-1
-                self.hs['VisImgViewAlignSli sldr'].min = 0
+                self.hs['VisImgViewAlignSli sldr'].max = self.xanes_fit_data_shape[1]
+                self.hs['VisImgViewAlignSli sldr'].min = 1
                 self.hs['VisImgViewAlign4thDim sldr'].value = 0
                 self.hs['VisImgViewAlign4thDim sldr'].description = 'E'
                 self.hs['VisImgViewAlign4thDim sldr'].max = self.xanes_fit_data_shape[0]-1
@@ -2972,7 +2972,7 @@ class xanes3D_tools_gui():
 
     def VisImgViewAlignSli_sldr_chg(self, a):
         fiji_viewer_on(self.global_h, self, viewer_name='xanes3D_analysis_viewer')
-        self.hs['VisImgViewAlignEng text'].value = round(self.xanes_fit_eng_list[a['owner'].value], 1)
+        self.hs['VisImgViewAlignEng text'].value = round(self.xanes_fit_eng_list[a['owner'].value-1], 1)
 
 
     def VisImgViewAlign4thDim_sldr_chg(self, a):

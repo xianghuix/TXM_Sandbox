@@ -521,7 +521,7 @@ def fiji_viewer_on(global_h, gui_h, viewer_name='xanes2D_raw_img_viewer'):
             global_h.xanes3D_fiji_windows['xanes3D_analysis_viewer']['ip'].setTitle(viewer_name)
         else:
             global_h.xanes3D_fiji_windows['xanes3D_analysis_viewer']['ip'].setSlice(gui_h.hs['VisImgViewAlignSli sldr'].value)
-            gui_h.hs['VisImgViewAlignEng text'].value = gui_h.xanes_fit_eng_list[gui_h.hs['VisImgViewAlignSli sldr'].value]
+            gui_h.hs['VisImgViewAlignEng text'].value = gui_h.xanes_fit_eng_list[gui_h.hs['VisImgViewAlignSli sldr'].value-1]
     elif viewer_name == 'xanes3D_fit_jump_flt_viewer':
         data_state, viewer_state = fiji_viewer_state(global_h, gui_h,
                                                      viewer_name=viewer_name)
@@ -956,6 +956,27 @@ def get_handles(hs, key):
     return get_keys(next(get_vals(hs, key)))
 
 
+# def get_decendant(box, level=-1):
+#     if level < 0:
+#         level = 1000000
+#     tem = []
+#     cnt = [0]
+#     def _get_decendant(box, level):
+#         if hasattr(box, 'children'):
+#             for ii in box.children:
+#                 if hasattr(ii, 'children'):
+#                     # if (not ii.children) and (cnt[0]<level):
+#                     if cnt[0] < level:
+#                         _get_decendant(ii, level-cnt[0])
+#                 else:
+#                     tem.append(ii)
+#                 cnt[0] += 1
+#         else:
+#             tem.append(box)
+#         return tem
+#     return _get_decendant(box, level=level)
+
+
 def get_decendant(box, level=-1):
     if level < 0:
         level = 1000000
@@ -963,14 +984,10 @@ def get_decendant(box, level=-1):
     cnt = [0]
     def _get_decendant(box, level):
         if hasattr(box, 'children'):
-            for ii in box.children:
-                if hasattr(ii, 'children'):
-                    # if (not ii.children) and (cnt[0]<level):
-                    if cnt[0] < level:
-                        _get_decendant(ii, level-cnt[0])
-                else:
-                    tem.append(ii)
-                cnt[0] += 1
+            cnt[0] += 1
+            if cnt[0] < level:
+                for ii in box.children:
+                    _get_decendant(ii, level-cnt[0])
         else:
             tem.append(box)
         return tem

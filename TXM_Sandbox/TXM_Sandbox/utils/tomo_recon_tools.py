@@ -10,7 +10,7 @@ import os, glob, gc, time, shutil, numpy as np
 
 from pathlib import Path
 import h5py, tifffile, json
-from scipy.ndimage import zoom, gaussian_filter as gf
+from scipy.ndimage import zoom, gaussian_filter as gf, median_filter as median
 import skimage.restoration as skr
 from skimage.transform import rescale
 import tomopy
@@ -64,6 +64,7 @@ FILTERLIST = ["phase retrieval",
               "stripe_removal: ti",
               "stripe_removal: sf",
               "stripe_removal: fw",
+              "denoise: median",
               "denoise: wiener",
               "denoise: unsupervised_wiener",
               "denoise: denoise_nl_means",
@@ -508,6 +509,10 @@ def run_engine(**kwargs):
         if if_log(flt_param_dict):
             data[:] = tomopy.prep.normalize.minus_log(data)[:]
             print('doing log')
+            if "remove cupping" in flt_param_dict.keys():
+                params = translate_params(flt_param_dict["remove cupping"]['params'])
+                data -= params['cc']
+                print("running remove cupping")
 
         if is_wedge:
             data[:] = sort_wedge(data, bad_angs, 0, 20, padval=0)[:]
@@ -622,6 +627,10 @@ def run_engine(**kwargs):
                     if if_log(flt_param_dict):
                         data[:] = tomopy.prep.normalize.minus_log(data)[:]
                         print('doing log')
+                        if "remove cupping" in flt_param_dict.keys():
+                            params = translate_params(flt_param_dict["remove cupping"]['params'])
+                            data -= params['cc']
+                            print("running remove cupping")
 
                     if is_wedge:
                         data[:] = sort_wedge(data, bad_angs, sli_start, sli_end, padval=0)[:]
@@ -682,6 +691,10 @@ def run_filter(data, flt):
             data[ii] = skr.wiener(data[ii], params['psf'],
                                   params['balance'], reg=params['reg'],
                                   is_real=params['is_real'], clip=params['clip'])[:]
+    elif flt_name == "denoise: median":
+        data[:] = median(data, size=(int(params['size angle']),
+                                     int(params['size y']),
+                                     int(params['size x'])))[:]
     elif flt_name == "denoise: unsupervised_wiener":
         psfw = int(params['psf'])
         params['psf'] = np.ones([psfw, psfw]) / (psfw ** 2)
@@ -691,11 +704,12 @@ def run_filter(data, flt):
                                                   is_real=params['is_real'], clip=params['clip'])[:]
     elif flt_name == "denoise: denoise_nl_means":
         for ii in range(data.shape[0]):
-            data[ii] = skr.denoise_nl_means(data[ii], patch_size=params['patch_size'],
-                                            patch_distance=params['patch_distance'],
-                                            h=params['h'], multichannel=params['multichannel'],
-                                            fast_mode=params['fast_mode'], sigma=params['sigma'],
-                                            preserve_range=None)[:]
+            # data[ii] = skr.denoise_nl_means(data[ii], patch_size=params['patch_size'],
+            #                                 patch_distance=params['patch_distance'],
+            #                                 h=params['h'], multichannel=params['multichannel'],
+            #                                 fast_mode=params['fast_mode'], sigma=params['sigma'],
+            #                                 preserve_range=None)[:]
+            data[ii] = skr.denoise_nl_means(data[ii], **params, preserve_range=None)[:]
     elif flt_name == "denoise: denoise_tv_bregman":
         for ii in range(data.shape[0]):
             data[ii] = skr.denoise_tv_bregman(data[ii], params['weight'],
@@ -709,27 +723,27 @@ def run_filter(data, flt):
                                                 multichannel=params['multichannel'])[:]
     elif flt_name == "denoise: denoise_bilateral":
         for ii in range(data.shape[0]):
-            data[ii] = skr.denoise_bilateral(data[ii], win_size=params['win_size'],
-                                             sigma_color=params['sigma_color'], sigma_spatial=params['sigma_spatial'],
-                                             bins=params['bins'], mode=params['mode'],
-                                             cval=params['cval'], multichannel=params['multichannel'])[:]
+            # data[ii] = skr.denoise_bilateral(data[ii], win_size=params['win_size'],
+            #                                  sigma_color=params['sigma_color'], sigma_spatial=params['sigma_spatial'],
+            #                                  bins=params['bins'], mode=params['mode'],
+            #                                  cval=params['cval'], multichannel=params['multichannel'])[:]
+            data[ii] = skr.denoise_bilateral(data[ii], **params)[:]
     elif flt_name == "denoise: denoise_wavelet":
         for ii in range(data.shape[0]):
-            data[ii] = skr.denoise_wavelet(data[ii], sigma=params['sigma'],
-                                           wavelet=params['wavelet'], mode=params['mode'],
-                                           wavelet_levels=params['wavelet_levels'], multichannel=params['multichannel'],
-                                           convert2ycbcr=params['convert2ycbcr'], method=params['method'],
-                                           rescale_sigma=params['rescale_sigma'])[:]
+            # data[ii] = skr.denoise_wavelet(data[ii], sigma=params['sigma'],
+            #                                wavelet=params['wavelet'], mode=params['mode'],
+            #                                wavelet_levels=params['wavelet_levels'], multichannel=params['multichannel'],
+            #                                convert2ycbcr=params['convert2ycbcr'], method=params['method'],
+            #                                rescale_sigma=params['rescale_sigma'])[:]
+            data[ii] = skr.denoise_wavelet(data[ii], **params)[:]
     elif flt_name == "flatting bkg":
         data[:] = tomopy.prep.normalize.normalize_bg(data, air=params['air'])[:]
-    elif flt_name == "remove cupping":
-        data -= params['cc']
+    # elif flt_name == "remove cupping":
+    #     data -= params['cc']
     elif flt_name == "stripe_removal: vo":
         for key in params.keys():
             if key in ["la_size", "sm_size"]:
                 params[key] = int(params[key])
-        # print(data.shape)
-        # print(params)
         data[:] = tomopy.prep.stripe.remove_all_stripe(data, **params)[:]
     elif flt_name == "stripe_removal: ti":
         data[:] = tomopy.prep.stripe.remove_stripe_ti(data, **params)[:]
