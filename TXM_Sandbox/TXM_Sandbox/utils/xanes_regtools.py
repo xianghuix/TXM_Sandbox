@@ -97,7 +97,6 @@ class regtools():
             self.mode = ''
         self.ref_mode = 'neighbor'
 
-
     def set_analysis_type(self, dtype='3D_XANES'):
         """
         Parameters
@@ -111,52 +110,40 @@ class regtools():
         """
         self.data_type = dtype.upper()
 
-
     def set_chunk_sz(self, chunk_sz):
         self.chunk_sz = chunk_sz
-
 
     def set_roi(self, roi):
         self.roi = roi
 
-
     def set_eng_list(self, eng_list):
         self.eng_list = eng_list
-
 
     def set_xanes3D_raw_h5_top_dir(self, raw_h5_top_dir):
         self.xanes3D_raw_h5_top_dir = raw_h5_top_dir
 
-
     def set_raw_data_info(self, **kwargs):
         self.raw_data_info = kwargs
-
 
     def set_xanes3D_recon_path_template(self, path_template):
         self.xanes3D_recon_path_template = path_template
 
-
     def set_xanes2D_raw_filename(self, filename):
         self.xanes2D_raw_filename = filename
-
 
     def set_xanes2D_tmp_filename(self, filename):
         self.xanes2D_tmp_filename = filename
 
-
     def set_xanes3D_tmp_filename(self, filename):
         self.xanes3D_tmp_filename = filename
 
-
     def set_xanes3D_scan_ids(self, avail_recon_ids):
         self.img_ids = avail_recon_ids[self.img_id_s:self.img_id_e+1]
-
 
     def set_indices(self, img_id_s, img_id_e, fixed_img_id):
         self.img_id_s = img_id_s
         self.img_id_e = img_id_e
         self.fixed_img_id = fixed_img_id
-
 
     def set_reg_options(self, use_mask=True, mask_thres=0,
                         use_chunk=True, chunk_sz=7,
@@ -199,56 +186,17 @@ class regtools():
         self.alg_mrtv_sp_wz = mrtv_sp_wz
         self.alg_mrtv_sp_kernel = mrtv_sp_kernel
 
-    # def set_xanes3D_reg_options(self, use_mask=True, mask=None, mask_thres=0,
-    #                             use_chunk=True, chunk_sz=7,
-    #                             use_smooth_img=False, smooth_sigma=0):
-    #     """
-    #     the current use_anchor setting is not contraversial. all the registrations
-    #     use some anchors. It is not anchor but chunk setting making differences.
-    #     The code shoudl be modified to have use_chunk and remove use_anchor
-
-    #     Parameters
-    #     ----------
-    #     use_mask : TYPE, optional
-    #         DESCRIPTION. The default is True.
-    #     mask_thres : TYPE, optional
-    #         DESCRIPTION. The default is 0.
-    #     use_chunk : TYPE, optional
-    #         DESCRIPTION. The default is True.
-    #     anchor_id : TYPE, optional
-    #         DESCRIPTION. The default is 0.
-    #     use_smooth_img : TYPE, optional
-    #         DESCRIPTION. The default is False.
-    #     smooth_sigma : TYPE, optional
-    #         DESCRIPTION. The default is 0.
-
-    #     Returns
-    #     -------
-    #     None.
-
-    #     """
-    #     self.use_mask = use_mask
-    #     self.mask_thres = mask_thres
-    #     self.use_chunk = use_chunk
-    #     self.chunk_sz = chunk_sz
-    #     self.use_smooth_img = use_smooth_img
-    #     self.img_smooth_sigma = smooth_sigma
-
     def set_method(self, method):
         self.method = method.upper()
-
 
     def set_ref_mode(self, ref_mode):
         self.ref_mode = ref_mode.upper()
 
-
     def set_img_data(self, moving):
         self.img = moving
 
-
     def set_mask(self, mask):
         self.mask = mask
-
 
     def set_saving(self, save_path, fn=None):
         if save_path is not None:
@@ -258,7 +206,6 @@ class regtools():
         self.savefn = os.path.join(self.save_path, fn)
         print('1. The registration results will be saved in {:s}'
               .format(self.savefn))
-
 
     def read_xanes2D_tmp_file(self, mode='reg'):
         with h5py.File(self.xanes2D_tmp_filename, 'r') as f:
@@ -271,14 +218,12 @@ class regtools():
                 self.mask = None
             self.eng_list = f['analysis_eng_list'][:]
 
-
     def read_xanes3D_tmp_file(self):
         with h5py.File(self.xanes3D_tmp_filename, 'r') as f:
             self.mask = f['xanes3D_reg_mask'][:]
             if len(self.mask.shape) == 1:
                 self.mask = None
             self.eng_list = f['analysis_eng_list'][:]
-
 
     def compose_dicts(self):
         if self.data_type == '3D_XANES':
@@ -308,11 +253,8 @@ class regtools():
                     self.eng_dict[str(cnt).zfill(3)] = self.eng_list[cnt]
                     self.img_ids_dict[str(cnt).zfill(3)] = ii
                     cnt += 1
-                # else:
-                #     print('xanes3D raw h5 top dir is not defined.')
             else:
                 print('fixed_img_id is outside of [img_id_s, img_id_e].')
-
 
     def _chunking(self):
         """
@@ -332,11 +274,8 @@ class regtools():
             left_num_chunk = int(np.ceil(self.anchor / self.chunk_sz))
             num_chunk = left_num_chunk + right_num_chunk
             self.num_chunk = num_chunk
-            # number of chunks before the anchor chunk
             self.left_num_chunk = left_num_chunk - 1
-            # the index of anchor chunk
             self.anchor_chunk = left_num_chunk - 1
-            # chunks = np.ndarray(num_chunk, dtype=np.int)
             for ii in range(left_num_chunk-1):
                 self.chunks[left_num_chunk-1-ii] = {'chunk_s':\
                     self.anchor - self.chunk_sz * (ii + 1) + 1}
@@ -370,7 +309,6 @@ class regtools():
         else:
             self.chunks[0] = {'chunk_s': 0}
             self.chunks[0]['chunk_e'] = self.data_pnts - 1
-
 
     def _alignment_scheduler(self, dtype='2D_XANES'):
         """
@@ -476,7 +414,6 @@ class regtools():
                 self.alignment_pair_list.append([ii, ii+1])
             self.alignment_pair_list.append([self.anchor, self.anchor])
 
-
     def _sort_absolute_shift(self, trialfn, shift_dict=None, optional_shift_dict=None):
         """
         self.shift_chain_dict: generated variables with this function. the idx
@@ -565,7 +502,6 @@ class regtools():
             f.close()
         self.abs_shift_dict = abs_shift_dict
 
-
     def reg_xanes2D_chunk(self, overlap_ratio=0.3):
         """
         chunk_sz: int, number of image in one chunk for alignment; each chunk
@@ -634,7 +570,6 @@ class regtools():
         if self.img.ndim != 3:
                 print('XANES2D image stack is required. Please set XANES2D \
                       image stack first.')
-                # exit()
         else:
             if self.method.upper() in {'PC', 'MPC', 'MRTV', 'LS+MRTV', 'MPC+MRTV'}:
                 self.shift = np.ndarray([len(self.alignment_pair_list), 2])
@@ -799,7 +734,6 @@ class regtools():
         f.close()
         print('Done!')
 
-
     def apply_xanes2D_chunk_shift(self, optional_shift_dict, trialfn=None, savefn=None):
         """
         trialfn:    string; optional
@@ -875,7 +809,6 @@ class regtools():
                                                    self.roi[2]:self.roi[3]]
                     g22[cnt1] = self.eng_dict[key]
                     cnt1 += 1
-
 
     def reg_xanes3D_chunk(self):
         """
@@ -1201,8 +1134,6 @@ class regtools():
 
                     jj_id += 1
                 g11 = g1.create_group(str(ii).zfill(3))
-                # g11.create_dataset('mrtv_best_shift_id'+str(ii).zfill(3),
-                #                    data=self.shift[ii].argmin())
                 g11.create_dataset('shift'+str(ii).zfill(3),
                                    data=self.shift[ii])
                 g11.create_dataset('trial_reg_img'+str(ii).zfill(3),
@@ -1210,7 +1141,6 @@ class regtools():
                 g11.create_dataset('trial_fixed_img'+str(ii).zfill(3),
                                    data=self.fixed)
         f.close()
-
 
     def apply_xanes3D_chunk_shift(self, shift_dict, sli_s, sli_e,
                                   trialfn=None, savefn=None, optional_shift_dict=None):
@@ -1242,10 +1172,8 @@ class regtools():
         if trialfn is None:
             trialfn = self.savefn
 
-        # print(0)
         if savefn == trialfn:
             with h5py.File(savefn, 'a') as f:
-                # print(1)
                 if 'registration_results' not in f:
                     g0 = f.create_group('registration_results')
                 else:
@@ -1302,7 +1230,6 @@ class regtools():
                                                self.roi[3]-self.roi[2]))
                 g22 = g2.create_dataset('eng_list', shape=(len(self.img_ids_dict),))
 
-                # print(2)
                 img = np.ndarray([self.roi[1]-self.roi[0], self.roi[3]-self.roi[2]])
                 cnt1 = 0
                 for key in sorted(self.abs_shift_dict.keys()):
@@ -1335,8 +1262,6 @@ class regtools():
 
                     g22[cnt1] = self.eng_dict[key]
                     cnt1 += 1
-            # f.close()
-
 
     def save_reg_result(self, dtype='2D_XANES', data=None):
         if dtype.upper() == '2D_XANES':
@@ -1514,7 +1439,6 @@ class regtools():
         else:
             print("'dtype' can only be '2D_XANES' or '3D_XANES'. Quit!")
 
-
     def _translate_single_img(self, img, shift, method):
         if method.upper() in ['PC', 'MPC', 'MRTV', 'MPC+MRTV']:
             img[:] = np.real(np.fft.ifftn(fourier_shift(np.fft.fftn(img), shift)))[:]
@@ -1533,7 +1457,6 @@ class regtools():
         else:
             print('Nonrecognized method. Quit!')
             # exit()
-
 
     def xanes3D_shell_slicing(self, fn):
         pass

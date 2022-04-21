@@ -19,654 +19,6 @@ from pystackreg import StackReg
 
 from .misc import msgit
 
-#
-# def op_comb2(x, ref, tgt, mask, gfk, Ns=40, roi=None, cft='tv', itr=3):
-#     """ tv of the difference map between ref and transformed tgt
-#     INPUTS:
-#        x: transformation parameters;
-#           x[0] and x[1]: x and y translations
-#           x[2]: rotaiton angle
-#           x[3]: scaling factor
-#        ref: reference image to be compared to
-#        tgt: the image to be transformed to be compared to ref
-#        gfk: gaussian_filter kernel
-#        cft: cost function type; choose from ['tv', 'de']
-#     RETURNS:
-#         TV: total variance of the difference map between ref and the
-#         transformed tgt
-#     """
-#     rlt = []
-#     if x[-1][0] == x[-1][1] == 1:
-#         for ii in range(itr):
-#             rlt.append(brute(rigid_transform_comb, x[:3],
-#                              Ns=Ns,
-#                              args=(ref, tgt, mask, gfk, roi, cft),
-#                              workers=-1,
-#                              finish=None))
-#             print(f"{ii}: {rlt[ii]}")
-#             x = [(rlt[ii][0] - (x[0][1] - x[0][0]) / 4, rlt[ii][0] + (x[0][1] - x[0][0]) / 4),
-#                  (rlt[ii][1] - (x[1][1] - x[1][0]) / 4, rlt[ii][1] + (x[1][1] - x[1][0]) / 4),
-#                  (rlt[ii][2] - (x[2][1] - x[2][0]) / 4, rlt[ii][2] + (x[2][1] - x[2][0]) / 4)]
-#     else:
-#         for ii in range(itr):
-#             rlt.append(brute(transform_comb, x,
-#                              Ns=Ns,
-#                              args=(ref, tgt, mask, gfk, roi, cft),
-#                              workers=-1,
-#                              finish=None))
-#             print(f"{ii}: {rlt[ii]}")
-#             x = [(rlt[ii][0] - (x[0][1] - x[0][0]) / 4, rlt[ii][0] + (x[0][1] - x[0][0]) / 4),
-#                  (rlt[ii][1] - (x[1][1] - x[1][0]) / 4, rlt[ii][1] + (x[1][1] - x[1][0]) / 4),
-#                  (rlt[ii][2] - (x[2][1] - x[2][0]) / 4, rlt[ii][2] + (x[2][1] - x[2][0]) / 4),
-#                  (rlt[ii][3] - (x[3][1] - x[3][0]) / 4, rlt[ii][3] + (x[3][1] - x[3][0]) / 4)]
-#     return rlt
-#
-#
-# def op_comb(x, ref, tgt, mask, gfk, popsize=27, Ns=40, roi=None, cft='tv'):
-#     """ tv of the difference map between ref and transformed tgt
-#     INPUTS:
-#        x: transformation parameters;
-#           x[0] and x[1]: x and y translations
-#           x[2]: rotaiton angle
-#           x[3]: scaling factor
-#        ref: reference image to be compared to
-#        tgt: the image to be transformed to be compared to ref
-#        gfk: gaussian_filter kernel
-#        cft: cost function type; choose from ['tv', 'de']
-#     RETURNS:
-#         TV: total variance of the difference map between ref and the
-#         transformed tgt
-#     """
-#     if (x[-1][0] == x[-1][1] == 1) and (x[-2][0] == x[-2][1] == 0):
-#         rlt1 = deo(tran, x[:-2],
-#                    args=(ref, tgt, mask, gfk, roi, cft),
-#                    workers=-1, mutation=(0.5, 1.5), popsize=popsize)
-#         print('deo is done')
-#         rlt2 = brute(tran,
-#                      [(rlt1.x[0] - 1, rlt1.x[0] + 1),
-#                       (rlt1.x[1] - 1, rlt1.x[1] + 1)],
-#                      Ns=Ns,
-#                      args=(ref, tgt, mask, gfk, roi, cft),
-#                      workers=-1,
-#                      finish=None)
-#     elif (x[-1][0] == x[-1][1] == 1):
-#         rlt1 = deo(rigid_transform_comb, x[:3],
-#                    args=(ref, tgt, mask, gfk, roi, cft),
-#                    workers=-1, mutation=(0.5, 1.5), popsize=popsize)
-#         print('deo is done')
-#         rlt2 = brute(rigid_transform_comb,
-#                      [(rlt1.x[0] - 1, rlt1.x[0] + 1),
-#                       (rlt1.x[1] - 1, rlt1.x[1] + 1),
-#                       (rlt1.x[2] - 1, rlt1.x[2] + 1)],
-#                      Ns=Ns,
-#                      args=(ref, tgt, mask, gfk, roi, cft),
-#                      workers=-1,
-#                      finish=None)
-#     else:
-#         rlt1 = deo(transform_comb, x,
-#                    args=(ref, tgt, mask, gfk, roi, cft),
-#                    workers=-1, popsize=popsize)
-#         print('deo is done')
-#         rlt2 = brute(transform_comb,
-#                      [(rlt1.x[0] - 1, rlt1.x[0] + 1), (rlt1.x[1] - 1, rlt1.x[1] + 1),
-#                       (rlt1.x[2] - 1, rlt1.x[2] + 1), (rlt1.x[3] - 0.2, rlt1.x[3] + 0.2)],
-#                      Ns=Ns,
-#                      args=(ref, tgt, mask, gfk, roi, cft),
-#                      workers=-1,
-#                      finish=None)
-#     return rlt1, rlt2
-#
-#
-# def op_comb_deos(x, ref, tgt, mask, gfk, Ns=40, roi=None, cft='tv'):
-#     """ tv of the difference map between ref and transformed tgt
-#     INPUTS:
-#        x: transformation parameters;
-#           x[0] and x[1]: x and y translations
-#           x[2]: rotaiton angle
-#           x[3]: scaling factor
-#        ref: reference image to be compared to
-#        tgt: the image to be transformed to be compared to ref
-#        gfk: gaussian_filter kernel
-#        cft: cost function type; choose from ['tv', 'de']
-#     RETURNS:
-#         TV: total variance of the difference map between ref and the
-#         transformed tgt
-#     """
-#     if (x[-1][0] == x[-1][1] == 1) and (x[-2][0] == x[-2][1] == 0):
-#         rlt1 = deo(tran, x[:-2],
-#                    args=(ref, tgt, mask, gfk, roi, cft),
-#                    workers=-1, mutation=(0.5, 1.5))
-#         print('deo is done')
-#         rlt2 = deo(tran,
-#                    [(rlt1.x[0] - 1, rlt1.x[0] + 1),
-#                     (rlt1.x[1] - 1, rlt1.x[1] + 1)],
-#                    args=(ref, tgt, mask, gfk, roi, cft),
-#                    workers=-1,
-#                    mutation=(0.5, 1.5))
-#     elif (x[-1][0] == x[-1][1] == 1):
-#         rlt1 = deo(rigid_transform_comb, x[:3],
-#                    args=(ref, tgt, mask, gfk, roi, cft),
-#                    workers=-1, mutation=(0.5, 1.5))
-#         print('deo is done')
-#         rlt2 = deo(rigid_transform_comb,
-#                    [(rlt1.x[0] - 1, rlt1.x[0] + 1),
-#                     (rlt1.x[1] - 1, rlt1.x[1] + 1),
-#                     (rlt1.x[2] - 1, rlt1.x[2] + 1)],
-#                    args=(ref, tgt, mask, gfk, roi, cft),
-#                    workers=-1,
-#                    mutation=(0.5, 1.5))
-#     else:
-#         rlt1 = deo(transform_comb, x,
-#                    args=(ref, tgt, mask, gfk, roi, cft),
-#                    workers=-1)
-#         print('deo is done')
-#         rlt2 = deo(transform_comb,
-#                    [(rlt1.x[0] - 1, rlt1.x[0] + 1), (rlt1.x[1] - 1, rlt1.x[1] + 1),
-#                     (rlt1.x[2] - 1, rlt1.x[2] + 1), (rlt1.x[3] - 0.2, rlt1.x[3] + 0.2)],
-#                    args=(ref, tgt, mask, gfk, roi, cft),
-#                    workers=-1,
-#                    mutation=(0.5, 1.5))
-#     return rlt1, rlt2
-#
-#
-# def mrtv_deo(conf, tgt, src, sub_conf=None, gfk=1, ps=None, roi=None, cft='tv'):
-#     """
-#     Provide a unified interace for using multi-resolution TV-based registration
-#     algorithm with different configuration options.
-#
-#     Inputs:
-#     ______
-#         conf: dict; multi-resolution TV minimization configuration at
-#               resolution higher than a single pixel; it includes items:
-#               'levs': int
-#               'wz': list with length equal to dimension
-#         tgt: 2D target image to be registed to
-#         src: 2D source image to be transformed
-#         sub_conf: dict; optional; sub-pixel TV minimization configuration; it includes
-#                   items:
-#                   'use': boolean; if conduct sub-pixel registration on the end
-#                   'type': ['ana', 'fit']; which sub-pixel routine to use
-#                   'sp_wz': int; for 'fit' option; the number of TV points to be
-#                            used in fitting
-#                   'sp_us': int; for 'ana' option; up-sampling factor
-#         ps: optonal; pre-defined shift; None or a 2-element tuple
-#         gfk: optional; Gaussian filter kernel width
-#         cft: string, optional; cost function type; choose between 'tv' for TV and 'de'
-#              for differential energy (sum of squared difference)
-#
-#     Outputs:
-#     _______
-#         tv_pxl: dict; TV at each search point under levels as the keywords
-#         tv_pxl_id: the id of the minimum TV in the flatted tv_pxl for each level
-#         shift: ndarray; shift at each level of resolution
-#         tot_shift: 2-element tuple; overall displacement between the pair of images
-#     """
-#     """
-#     single process version of mrtv_reg2. Parallelization is implemented
-#     on the upper level on which the alignments of pairs of images are
-#     parallelized
-#     """
-#     if ps is not None:
-#         if np.array(ps).shape[0] == 2:
-#             imgs[1] = np.real(np.fft.ifftn(
-#                 fourier_shift(np.fft.fftn(imgs[1]), ps)))
-#         elif np.array(ps).shape[0] == 3:
-#             imgs[1] = np.real(np.fft.ifftn(
-#                 fourier_shift(np.fft.fftn(rotate(imgs[1], ps[2], order=1, reshape=False)), ps[:2])))
-#         elif np.array(ps).shape[0] == 4:
-#             imgs[1] = np.real(np.fft.ifftn(
-#                 fourier_shift(np.fft.fftn(rotate(zoom(imgs[1], ps[3]), ps[2], order=1, reshape=False)), ps[:2])))
-#
-#     levs = conf['levs']
-#     w = np.array(conf['wz'])
-#     step = {}
-#     tv_pxl = {}
-#     tv_pxl_id = np.zeros(levs, dtype=np.int16)
-#     shift = np.zeros([levs + 1, np.array(w).shape[0]], dtype=np.float32)
-#
-#     for ii in range(levs):
-#         step[levs - 1 - ii] = 0.5 ** ii
-#
-#     if ((np.array(tgt.shape) * 0.5 ** (levs - 2) - w) <= 0).any():
-#         return -1
-#
-#     if np.array(w).shape[0] == 2:
-#         for ii in range(levs):
-#             s = step[ii]
-#             f = zoom(tgt, s)
-#             m = zoom(src, s)
-#             mk = np.zeros(m.shape, dtype=np.int8)
-#             mk[int(w[0] * 2 ** (ii - 1)):-int(w[0] * 2 ** (ii - 1)),
-#             int(w[1] * 2 ** (ii - 1)):-int(w[1] * 2 ** (ii - 1))] = 1
-#
-#             sh = shift[ii] * 2
-#
-#             print(f"{sh.shape=}, {w.shape=}")
-#             rlt = deo(tran,
-#                       [(sh[0] - w[0] / 2, sh[0] + w[0] / 2),
-#                        (sh[1] - w[1] / 2, sh[1] + w[1] / 2)],
-#                       args=(f, m, mk, gfk, roi, cft),
-#                       workers=-1, mutation=(0.5, 1.5))
-#
-#             tv_pxl[ii] = rlt.fun
-#             shift[ii] = rlt.x
-#
-#             if ii == levs - 1:
-#                 while (shift[ii][0] <= -w[0] / 2 or
-#                        shift[ii][0] >= w[0] / 2 or
-#                        shift[ii][1] <= -w[1] / 2 or
-#                        shift[ii][1] >= w[1] / 2):
-#                     if shift[ii][0] <= -w[0] / 2 or shift[ii][0] >= w[0] / 2:
-#                         sh[0] = shift[ii][0]
-#                     if shift[ii][1] <= -w[1] / 2 or shift[ii][1] >= w[1] / 2:
-#                         sh[1] = shift[ii][1]
-#                     rlt = brute(tran,
-#                                 [(sh[0] - 1, sh[0] + 1),
-#                                  (sh[1] - 1, sh[1] + 1)],
-#                                 args=(f, m, mk, gfk, roi, cft),
-#                                 Ns=10, workers=-1, finish=None)
-#
-#                     tv_pxl[ii] = rlt[1]
-#                     shift[ii] = rlt[0]
-#
-#         return tv_pxl, shift
-#
-#
-# def mrtv_deo2(conf, tgt, src, sub_conf=None, gfk=1, ps=None, roi=None, subpxl_res=0.2, cft='tv'):
-#     """
-#     Provide a unified interace for using multi-resolution TV-based registration
-#     algorithm with different configuration options.
-#
-#     Inputs:
-#     ______
-#         conf: dict; multi-resolution TV minimization configuration at
-#               resolution higher than a single pixel; it includes items:
-#               'levs': int
-#               'wz': list with length equal to dimension
-#         tgt: 2D target image to be registed to
-#         src: 2D source image to be transformed
-#         sub_conf: dict; optional; sub-pixel TV minimization configuration; it includes
-#                   items:
-#                   'use': boolean; if conduct sub-pixel registration on the end
-#                   'type': ['ana', 'fit']; which sub-pixel routine to use
-#                   'sp_wz': int; for 'fit' option; the number of TV points to be
-#                            used in fitting
-#                   'sp_us': int; for 'ana' option; up-sampling factor
-#         ps: optonal; pre-defined shift; None or a 2-element tuple
-#         gfk: optional; Gaussian filter kernel width
-#         cft: string, optional; cost function type; choose between 'tv' for TV and 'de'
-#              for differential energy (sum of squared difference)
-#
-#     Outputs:
-#     _______
-#         tv_pxl: dict; TV at each search point under levels as the keywords
-#         tv_pxl_id: the id of the minimum TV in the flatted tv_pxl for each level
-#         shift: ndarray; shift at each level of resolution
-#         tot_shift: 2-element tuple; overall displacement between the pair of images
-#     """
-#     """
-#     single process version of mrtv_reg2. Parallelization is implemented
-#     on the upper level on which the alignments of pairs of images are
-#     parallelized
-#     """
-#     if ps is not None:
-#         if np.array(ps).shape[0] == 2:
-#             src = np.real(np.fft.ifftn(
-#                 fourier_shift(np.fft.fftn(src), ps)))
-#         elif np.array(ps).shape[0] == 3:
-#             src = np.real(np.fft.ifftn(
-#                 fourier_shift(np.fft.fftn(rotate(src, ps[2], order=1, reshape=False)), ps[:2])))
-#         elif np.array(ps).shape[0] == 4:
-#             src = np.real(np.fft.ifftn(
-#                 fourier_shift(np.fft.fftn(rotate(zoom(src, ps[3]), ps[2], order=1, reshape=False)), ps[:2])))
-#
-#     w = np.array(conf['wz'])
-#     tv_pxl = {}
-#     shift = np.zeros([2, np.array(w).shape[0]], dtype=np.float32)
-#     sub_wz = 10 * subpxl_res / 2
-#
-#     if np.array(w).shape[0] == 2:
-#         mk = np.zeros(src.shape, dtype=np.int8)
-#         mk[int(w[0] / 2):-int(w[0] / 2),
-#         int(w[1] / 2):-int(w[1] / 2)] = 1
-#
-#         print(f"{shift.shape=}, {w.shape=}")
-#         rlt = deo(tran,
-#                   [(shift[0, 0] - w[0] / 2, shift[0, 0] + w[0] / 2),
-#                    (shift[0, 1] - w[1] / 2, shift[0, 1] + w[1] / 2)],
-#                   args=(tgt, src, mk, gfk, roi, cft),
-#                   workers=-1, mutation=(0.5, 1.5), popsize=25, tol=1e-3)
-#
-#         tv_pxl[0] = rlt.fun
-#         shift[0] = rlt.x
-#         print(f"{shift[0]=}")
-#         print('deo is done')
-#         # print(f"{[(shift[0, 0]-1, shift[0, 0]+1), (shift[0, 1]-1, shift[0, 1]+1)]}")
-#
-#         rlt = brute(tran,
-#                     [(shift[0, 0] - sub_wz, shift[0, 0] + sub_wz),
-#                      (shift[0, 1] - sub_wz, shift[0, 1] + sub_wz)],
-#                     args=(tgt, src, mk, gfk, roi, cft),
-#                     Ns=10, workers=-1, finish=None, full_output=1)
-#         tv_pxl[1] = rlt[1]
-#         shift[1] = rlt[0]
-#         print(f"{shift[1]=}")
-#         print('pre brute is done')
-#
-#         sh = shift[0]
-#         while (shift[1, 0] <= sh[0] - sub_wz or
-#                shift[1, 0] >= sh[0] + sub_wz or
-#                shift[1, 1] <= sh[1] - sub_wz or
-#                shift[1, 1] >= sh[1] + sub_wz):
-#             if shift[1, 0] <= sh[0] - sub_wz or shift[1, 0] >= sh[0] + sub_wz:
-#                 sh[0] = shift[1, 0]
-#             if shift[1, 1] <= sh[1] - sub_wz or shift[1, 1] >= sh[1] + sub_wz:
-#                 sh[1] = shift[1, 1]
-#
-#             rlt = brute(tran,
-#                         [(sh[0] - sub_wz, sh[0] + sub_wz),
-#                          (sh[1] - sub_wz, sh[1] + sub_wz)],
-#                         args=(tgt, src, mk, gfk, roi, cft),
-#                         Ns=10, workers=-1, finish=None, full_output=1)
-#
-#             print(f"post brute {sh=} \t {rlt[0]=}")
-#             tv_pxl[1] = rlt[1]
-#             shift[1] = rlt[0]
-#
-#         return tv_pxl, shift
-#
-#
-# def transform_comb(x, ref, tgt, mask, gfk, roi=None, cft='tv'):
-#     """ tv of the difference map between ref and transformed tgt
-#     INPUTS:
-#        x: transformation parameters;
-#           x[0] and x[1]: x and y translations
-#           x[2]: rotaiton angle
-#           x[3]: scaling factor
-#        ref: reference image to be compared to
-#        tgt: the image to be transformed to be compared to ref
-#        gfk: gaussian_filter kernel
-#        cft: cost function type; choose from ['tv', 'de']
-#     RETURNS:
-#         TV: total variance of the difference map between ref and the
-#         transformed tgt
-#     """
-#     tgt = zoom(gf(tgt, gfk), x[3])
-#     if roi is None:
-#         roi = np.s_[int((tgt.shape[0] - ref.shape[0]) / 2):int((tgt.shape[0] - ref.shape[0]) / 2) + ref.shape[0],
-#               int((tgt.shape[1] - ref.shape[1]) / 2):int((tgt.shape[1] - ref.shape[1]) / 2) + ref.shape[1]]
-#     return cost_norm(ref, shift(rotate(tgt, x[2], order=1, reshape=False), x[:2])[roi], gfk=gfk, type=cft)
-#
-#
-# def rigid_transform_deo(x, ref, tgt, mask, gfk, itr=2, roi=None, cft='tv', order='i'):
-#     """ tv of the difference map between ref and transformed tgt
-#     INPUTS:
-#        x: transformation parameters;
-#           x[0] and x[1]: x and y translations
-#           x[2]: rotaiton angle
-#        ref: reference image to be compared to
-#        tgt: the image to be transformed to be compared to ref
-#        gfk: gaussian_filter kernel
-#        cft: cost function type; choose from ['tv', 'de']
-#     RETURNS:
-#         TV: total variance of the difference map between ref and the
-#         transformed tgt
-#     """
-#     rlt = {}
-#     tgt = gf(tgt, gfk)
-#     if roi is None:
-#         roi = np.s_[int((tgt.shape[0] - ref.shape[0]) / 2):int((tgt.shape[0] - ref.shape[0]) / 2) + ref.shape[0],
-#               int((tgt.shape[1] - ref.shape[1]) / 2):int((tgt.shape[1] - ref.shape[1]) / 2) + ref.shape[1]]
-#     for ii in range(itr):
-#         rlt[ii] = {}
-#         rr = deo(rota, [(x[-1][0], x[-1][1])], args=(tgt, src, mask, gfk, roi, cft, order),
-#                  workers=-1, mutation=(0.5, 1.5), popsize=25, tol=1e-3)
-#         src[:] = rotate(src, rr.x[0], order=1, reshape=False)[:]
-#         rt = deo(tran, list(x[:2]), args=(tgt, src, mask, gfk, roi, cft, order),
-#                  workers=-1, mutation=(0.5, 1.5), popsize=25, tol=1e-3)
-#         src[:] = shift(src, rt.x)[:]
-#         rlt[ii]['rota'] = rr.x
-#         rlt[ii]['tran'] = rt.x
-#         print(ii)
-#     return rlt
-#
-#
-# def rigid_transform_comb(x, ref, tgt, mask, gfk, roi=None, cft='tv', order='i'):
-#     """ tv of the difference map between ref and transformed tgt
-#     INPUTS:
-#        x: transformation parameters;
-#           x[0] and x[1]: x and y translations
-#           x[2]: rotaiton angle
-#        ref: reference image to be compared to
-#        tgt: the image to be transformed to be compared to ref
-#        gfk: gaussian_filter kernel
-#        cft: cost function type; choose from ['tv', 'de']
-#     RETURNS:
-#         TV: total variance of the difference map between ref and the
-#         transformed tgt
-#     """
-#     tgt = gf(tgt, gfk)
-#     if roi is None:
-#         roi = np.s_[int((tgt.shape[0] - ref.shape[0]) / 2):int((tgt.shape[0] - ref.shape[0]) / 2) + ref.shape[0],
-#               int((tgt.shape[1] - ref.shape[1]) / 2):int((tgt.shape[1] - ref.shape[1]) / 2) + ref.shape[1]]
-#     return cost_norm(ref, shift(rotate(tgt, x[2], order=1, reshape=False), x[:2])[roi], gfk=gfk, type=cft, order=order)
-
-
-# def tran(x, ref, tgt, mask, gfk, roi=None, cft='tv'):
-#     """ tv of the difference map between ref and transformed tgt
-#     INPUTS:
-#        x: transformation parameters;
-#           x[0] and x[1]: x and y translations
-#           x[2]: rotaiton angle
-#        ref: reference image to be compared to
-#        tgt: the image to be transformed to be compared to ref
-#        gfk: gaussian_filter kernel
-#        cft: cost function type; choose from ['tv', 'de']
-#     RETURNS:
-#         TV: total variance of the difference map between ref and the
-#         transformed tgt
-#     """
-#     tgt = gf(tgt, gfk)
-#     if roi is None:
-#         roi = np.s_[int((tgt.shape[0]-ref.shape[0])/2):int((tgt.shape[0]-ref.shape[0])/2)+ref.shape[0],
-#                     int((tgt.shape[1]-ref.shape[1])/2):int((tgt.shape[1]-ref.shape[1])/2)+ref.shape[1]]
-#     return cost_norm(ref, shift(tgt, x[:])[roi], gfk=gfk, type=cft)
-#
-#
-# def ad_deo(bounds, ref, tgt, mask, gfk, roi, itr=3, cft='tv'):
-#     rlt = {}
-#     if bounds[3][0] == bounds[3][1] == 1:
-#         for ii in range(itr):
-#             rlt[ii] = {}
-#             rlt[ii]['rota'] = deo(rota, [bounds[2]], args=(ref, tgt, mask, gfk, roi, cft),
-#                                   workers=-1)
-#             tgt = rotate(tgt, rlt[ii]['rota'].x[0], order=1, reshape=False)
-#             rlt[ii]['tran'] = deo(tran, bounds[:2], args=(ref, tgt, mask, gfk, roi, cft),
-#                                   workers=-1)
-#             tgt = shift(tgt, rlt[ii]['tran'].x)
-#     else:
-#         for ii in range(itr):
-#             rlt[ii] = {}
-#             rlt[ii]['rota'] = deo(rota, [bounds[2]], args=(ref, tgt, mask, gfk, roi, cft),
-#                                   workers=-1)
-#             tgt = rotate(tgt, rlt[ii]['rota'].x[0], order=1, reshape=False)
-#             rlt[ii]['tran'] = deo(tran, bounds[:2], args=(ref, tgt, mask, gfk, roi, cft),
-#                                   workers=-1)
-#             tgt = shift(tgt, rlt[ii]['tran'].x)
-#             rlt[ii]['zoom'] = deo(zoom, [bounds[3]], args=(ref, tgt, mask, gfk, roi, cft),
-#                                   workers=-1)
-#             tgt = zoom(tgt, rlt[ii]['zoom'].x[0])
-#     return rlt, tgt
-#
-#
-# def edge(x, tgt, src):
-#     return np.abs(tgt - shift(src, x)).sum()
-
-
-# def cost_norm(tgt, src, mask=1, gfk=3, type='tv', order='l1'):
-#     """ calculate cost function normalized to the number of effective pixels
-#     INPUTS:
-#         tgt: reference image
-#         src: target image
-#         mask: optional; define effective pixels
-#         gfk: Gaussian filter kernel width
-#         type: optional
-#             'tv': total variance of the difference map between ref and tgt
-#             'de': difference energy between ref and tgt in L2 form
-#         order: optional; choose between 'l1', 'ao', 'ai'
-#             'l1': L1-norm
-#             'ao': absolute difference between the absolute Gaussian filtered images along each dimension
-#             'am': absolute difference between the absolute Gaussian filtered images on mixed dimension order
-#     """
-#     pnts = mask.sum()
-#     # if pnts > tgt.shape[0]*tgt.shape[1]:
-#     #     mask = np.ones(tgt.shape)
-#     if type == 'tv':
-#         if order == 'l1':
-#             diff_img = gf(tgt, gfk) - gf(src, gfk)
-#             return (((np.abs(np.diff(diff_img, axis=0, prepend=1)) + np.abs(np.diff(diff_img, axis=1, prepend=1)))) * mask).sum()/pnts
-#         elif order == 'ao':
-#             diff_img = (np.abs(np.abs(np.diff(gf(tgt, gfk), axis=0, prepend=1)) - np.abs(np.diff(gf(src, gfk), axis=0, prepend=1))) + \
-#                         np.abs(np.abs(np.diff(gf(tgt, gfk), axis=1, prepend=1)) - np.abs(np.diff(gf(src, gfk), axis=1, prepend=1))))
-#             return (diff_img * mask).sum()/pnts
-#         elif order == 'am':
-#             diff_img = (np.abs(np.abs(np.diff(gf(tgt, gfk), axis=0, prepend=1)) - np.abs(np.diff(gf(src, gfk), axis=1, prepend=1))) + \
-#                         np.abs(np.abs(np.diff(gf(tgt, gfk), axis=1, prepend=1)) - np.abs(np.diff(gf(src, gfk), axis=0, prepend=1))))
-#             return (diff_img * mask).sum()/pnts
-#     elif type == 'de':
-#         return (((tgt - src)**2)*mask).sum()/pnts
-
-# def cost_norm(tgt, src, mask=1, gfk=3, type='tv', order='i'):
-#     """
-#     INPUTS:
-#         tgt: reference image
-#         src: target image
-#         type: optional
-#             'tv': total variance of the difference map between ref and tgt
-#             'de': difference energy between ref and tgt in L2 form
-#     """
-#     if not isinstance(mask, np.ndarray):
-#         mask = (src != 0)
-#         for ii in range(6):
-#             mask[:] = binary_erosion(mask)[:]
-#     pnts = mask.sum()
-#     # if pnts > tgt.shape[0] * tgt.shape[1]:
-#     #     mask = np.ones(tgt.shape)
-#     if type == 'tv':
-#         if order == 'i':
-#             diff_img = gf(tgt, gfk) - gf(src, gfk)
-#             return (((np.abs(np.diff(diff_img, axis=0, prepend=1)) + np.abs(
-#                 np.diff(diff_img, axis=1, prepend=1)))) * mask).sum() / pnts
-#         elif order == 'ao':
-#             diff_img = (np.abs(
-#                 np.abs(np.diff(gf(tgt, gfk), axis=0, prepend=1)) - np.abs(np.diff(gf(src, gfk), axis=0, prepend=1))) + \
-#                         np.abs(np.abs(np.diff(gf(tgt, gfk), axis=1, prepend=1)) - np.abs(
-#                             np.diff(gf(src, gfk), axis=1, prepend=1))))
-#             return (diff_img * mask).sum() / pnts
-#         elif order == 'ai':
-#             diff_img = (np.abs(
-#                 np.abs(np.diff(gf(tgt, gfk), axis=0, prepend=1)) - np.abs(np.diff(gf(src, gfk), axis=1, prepend=1))) + \
-#                         np.abs(np.abs(np.diff(gf(tgt, gfk), axis=1, prepend=1)) - np.abs(
-#                             np.diff(gf(src, gfk), axis=0, prepend=1))))
-#             return (diff_img * mask).sum() / pnts
-#     elif type == 'de':
-#         return (((tgt - src) ** 2) * mask).sum() / pnts
-#         # return (((ref - tgt) ** 2)).sum()
-#
-#
-# def cost_norm_v2(tgt, src, mask=1, type='tv', order='i'):
-#     """
-#     INPUTS:
-#         tgt: reference image
-#         src: target image
-#         type: optional
-#             'tv': total variance of the difference map between ref and tgt
-#             'de': difference energy between ref and tgt in L2 form
-#     """
-#     if isinstance(mask, np.ndarray):
-#         pnts = mask.sum()
-#     else:
-#         pnts = tgt.shape[0] * tgt.shape[1]
-#     if type == 'tv':
-#         if order == 'i':
-#             diff_img = tgt - src
-#             return (((np.abs(np.diff(diff_img, axis=0, prepend=1)) + np.abs(
-#                 np.diff(diff_img, axis=1, prepend=1)))) * mask).sum() / pnts
-#         elif order == 'ao':
-#             diff_img = (np.abs(
-#                 np.abs(np.diff(tgt, axis=0, prepend=1)) - np.abs(np.diff(src, axis=0, prepend=1))) + \
-#                         np.abs(
-#                 np.abs(np.diff(tgt, axis=1, prepend=1)) - np.abs(np.diff(src, axis=1, prepend=1))))
-#             return (diff_img * mask).sum() / pnts
-#         elif order == 'ai':
-#             diff_img = (np.abs(
-#                 np.abs(np.diff(tgt, axis=0, prepend=1)) - np.abs(np.diff(src, axis=1, prepend=1))) + \
-#                         np.abs(
-#                 np.abs(np.diff(tgt, axis=1, prepend=1)) - np.abs(np.diff(src, axis=0, prepend=1))))
-#             return (diff_img * mask).sum() / pnts
-#     elif type == 'de':
-#         return (((tgt - src) ** 2) * mask).sum() / pnts
-
-
-# def cost_abs(tgt, src, mask=1, gfk=3, type='tv', order='i'):
-#     """
-#     INPUTS:
-#         tgt: reference image
-#         src: target image
-#         type: optional
-#             'tv': total variance of the difference map between ref and tgt
-#             'de': difference energy between ref and tgt in L2 form
-#     """
-#     if type == 'tv':
-#         if order == 'i':
-#             diff_img = gf(tgt, gfk) - gf(src, gfk)
-#             return (((np.abs(np.diff(diff_img, axis=0, prepend=1)) +
-#                       np.abs(np.diff(diff_img, axis=1, prepend=1)))) * mask).sum()
-#         elif order == 'ao':
-#             diff_img = (np.abs(
-#                 np.abs(np.diff(gf(tgt, gfk), axis=0, prepend=1)) - np.abs(np.diff(gf(src, gfk), axis=0, prepend=1))) + \
-#                        np.abs(np.abs(np.diff(gf(tgt, gfk), axis=1, prepend=1)) - np.abs(
-#                               np.diff(gf(src, gfk), axis=1, prepend=1))))
-#             return (diff_img * mask).sum()
-#         elif order == 'ai':
-#             diff_img = (np.abs(
-#                 np.abs(np.diff(gf(tgt, gfk), axis=0, prepend=1)) - np.abs(np.diff(gf(src, gfk), axis=1, prepend=1))) + \
-#                        np.abs(np.abs(np.diff(gf(tgt, gfk), axis=1, prepend=1)) - np.abs(
-#                               np.diff(gf(src, gfk), axis=0, prepend=1))))
-#             return (diff_img * mask).sum()
-#     elif type == 'de':
-#         return (((tgt - src) ** 2) * mask).sum()
-#
-#
-# def cost_abs_v2(tgt, src, mask=1, type='tv', order='i'):
-#     """
-#     INPUTS:
-#         tgt: reference image
-#         src: target image
-#         type: optional
-#             'tv': total variance of the difference map between ref and tgt
-#             'de': difference energy between ref and tgt in L2 form
-#     """
-#     if type == 'tv':
-#         if order == 'i':
-#             diff_img = tgt - src
-#             return (((np.abs(np.diff(diff_img, axis=0, prepend=1)) +
-#                       np.abs(np.diff(diff_img, axis=1, prepend=1)))) * mask).sum()
-#         elif order == 'ao':
-#             diff_img = (np.abs(
-#                 np.abs(np.diff(tgt, axis=0, prepend=1)) - np.abs(np.diff(src, axis=0, prepend=1))) + \
-#                         np.abs(
-#                 np.abs(np.diff(tgt, axis=1, prepend=1)) - np.abs(np.diff(src, axis=1, prepend=1))))
-#             return (diff_img * mask).sum()
-#         elif order == 'ai':
-#             diff_img = (np.abs(
-#                 np.abs(np.diff(tgt, axis=0, prepend=1)) - np.abs(np.diff(src, axis=1, prepend=1))) + \
-#                         np.abs(
-#                 np.abs(np.diff(tgt, axis=1, prepend=1)) - np.abs(np.diff(src, axis=0, prepend=1))))
-#             return (diff_img * mask).sum()
-#     elif type == 'de':
-#         return (((tgt - src) ** 2) * mask).sum()
-
 
 def cost_norm(tgt, src, mask=1, gfk=3, type='tv', order='i', filt=True):
     """
@@ -867,10 +219,8 @@ def rig_transform(src, param, dtype='mrtv'):
     dtype: string, optional; choose between 'pc', 'sr', 'mrtv'
     """
     if dtype == 'mrtv':
-        # return shift(rotate(src, rad_2_deg(cal_ang_rad(param[0, 0], param[1, 0])), order=1, reshape=False), param[:2, 2])
         return shift(rotate(src, rad_2_deg(cal_ang_rad(param[0, 0], param[1, 0]))), param[:2, 2])
     elif dtype == 'pc':
-        # return shift(rotate(src, -rad_2_deg(param[2]), order=1, reshape=False), [-param[1], -param[0]])
         return shift(rotate(src, -rad_2_deg(param[2])), [-param[1], -param[0]])
     elif dtype == 'sr':
         sr = StackReg(StackReg.RIGID_BODY)
@@ -891,7 +241,6 @@ def mrtv_rigid_reg(tgt, src, pxl_conf, sub_conf, angr, itr=6, ps=None, mask=1, r
     rlt = deo(rota, [list(angr)], args=(tgt, s, mask, gfk, roi, 'tv', order), workers=-1, popsize=popsize)
     m = np.matmul(set_rota_quad(np.pi * rlt.x[-1] / 180), m)
     print("0:\t", rlt.x, "\n")
-    # s[:] = rotate(s, rlt.x[-1], order=1, reshape=False)[:]
     s[:] = rotate(s, rlt.x[-1])[:]
 
     for ii in range(itr):
@@ -902,7 +251,6 @@ def mrtv_rigid_reg(tgt, src, pxl_conf, sub_conf, angr, itr=6, ps=None, mask=1, r
         rlt = deo(rota, [(-10, 10)], args=(tgt, s, mask, gfk, roi, 'tv', order), workers=-1, popsize=popsize)
         m = np.matmul(set_rota_quad(np.pi * rlt.x[-1] / 180), m)
         print(f"{ii + 1}:\t", rlt.x, "\n")
-        # s[:] = rotate(s, rlt.x[-1], order=1, reshape=False)[:]
         s[:] = rotate(s, rlt.x[-1])[:]
     return m, s
 
@@ -922,7 +270,6 @@ def mrtv_rigid_reg2(tgt, src, pxl_conf, sub_conf, angr, itr=6, ps=None, mask=1, 
     rlt = deo(rota, [list(angr)], args=(tgt, s, mask, gfk, roi, 'tv', order), workers=-1, popsize=popsize)
     m = np.matmul(set_rota_quad(np.pi * rlt.x[-1] / 180), m)
     print("0:\t", rlt.x, "\n")
-    # s[:] = rotate(s, rlt.x[-1], order=1, reshape=False)[:]
     s[:] = rotate(s, rlt.x[-1])[:]
 
     for ii in range(itr):
@@ -935,7 +282,6 @@ def mrtv_rigid_reg2(tgt, src, pxl_conf, sub_conf, angr, itr=6, ps=None, mask=1, 
         rlt = deo(rota, [(-10, 10)], args=(tgt, s, mask, gfk, roi, 'tv', order), workers=-1, popsize=popsize)
         m = np.matmul(set_rota_quad(np.pi * rlt.x[-1] / 180), m)
         print(f"{ii + 1}:\t", rlt.x, "\n")
-        # s[:] = rotate(s, rlt.x[-1], order=1, reshape=False)[:]
         s[:] = rotate(s, rlt.x[-1])[:]
     return m, s
 
@@ -947,18 +293,9 @@ def mrtv_rigid_reg4(tgt, src, pxl_conf, sub_conf, angr, itr=6, ps=None, mask=1, 
     m = np.eye(3)
     order = order
 
-    # gm = ((np.abs(s) > 1e-3)*(np.abs(tgt) > 1e-3)).astype(np.int8)
-    # tifffile.imsave(fpath.format(str(-1).zfill(2)), gm)
-    # tp, tpi, ss, mrtv_shift = mrtv_reg_v4(pxl_conf, sub_conf, ps=ps, gfk=gfk,
-    #                                       gm=gm, imgs=[s, tgt], filt=filt, norm=False)
-    # m = np.matmul(set_tran_quad(-np.array(mrtv_shift)), m)
-    # print("0:\t", mrtv_shift, '\n')
-    # s[:] = shift(s, -np.array(mrtv_shift))
-
     rlt = deo(rota, [list(angr)], args=(tgt, s, mask, gfk, roi, 'tv', order), workers=-1, popsize=popsize)
     m = np.matmul(set_rota_quad(np.pi * rlt.x[-1] / 180), m)
     print("0:\t", rlt.x, "\n")
-    # s[:] = rotate(s, rlt.x[-1], order=1, reshape=False)[:]
     s[:] = rotate(s, rlt.x[-1])[:]
 
     for ii in range(itr):
@@ -974,9 +311,7 @@ def mrtv_rigid_reg4(tgt, src, pxl_conf, sub_conf, angr, itr=6, ps=None, mask=1, 
         rlt = deo(rota, [(-10, 10)], args=(tgt, s, mask, gfk, roi, 'tv', order), workers=-1, popsize=popsize)
         m = np.matmul(set_rota_quad(np.pi * rlt.x[-1] / 180), m)
         print(f"{ii + 1}:\t", rlt.x, "\n")
-        # s[:] = rotate(s, rlt.x[-1], order=1, reshape=False)[:]
         s[:] = rotate(s, rlt.x[-1])[:]
-        # tifffile.imsave(fpath.format(str(3 * ii + 2).zfill(2)), (np.abs(s) > 1e-3).astype(np.int8))
     return m, s
 
 
@@ -997,7 +332,6 @@ def mrtv_rigid_reg5(tgt, src, pxl_conf, sub_conf, angr, itr=6, ps=None, mask=1, 
     rlt = deo(rota, [[-angr[1], -angr[0]]], args=(s, tgt, gm, gfk, roi, 'tv', order), workers=-1, popsize=popsize)
     m = np.matmul(set_rota_quad(-np.pi * rlt.x[-1] / 180), m)
     print("0:\t", rlt.x, "\n")
-    # s[:] = rotate(s, -rlt.x[-1], order=1, reshape=False)[:]
     s[:] = rotate(s, -rlt.x[-1])[:]
 
     for ii in range(itr):
@@ -1013,7 +347,6 @@ def mrtv_rigid_reg5(tgt, src, pxl_conf, sub_conf, angr, itr=6, ps=None, mask=1, 
         rlt = deo(rota, [(-10, 10)], args=(s, tgt, gm, gfk, roi, 'tv', order), workers=-1, popsize=popsize)
         m = np.matmul(set_rota_quad(-np.pi * rlt.x[-1] / 180), m)
         print(f"{ii + 1}:\t", rlt.x, "\n")
-        # s[:] = rotate(s, -rlt.x[-1], order=1, reshape=False)[:]
         s[:] = rotate(s, -rlt.x[-1])[:]
     return m, s
 
@@ -1052,13 +385,8 @@ def tv_l1_pixel_v3(tgt, src, mask, shift):
 def tv_l1_pixel_v4(fixed_img, img, mask, shift, filt=True, kernel=3, norm=True):
     if norm:
         return cost_norm(fixed_img, np.roll(img, shift, axis=[0, 1]), mask=mask, gfk=kernel, type='tv', order='i', filt=filt)
-        # diff_img = gf(fixed_img, kernel) - \
-        #     gf(np.roll(img, shift, axis=[0, 1]), kernel)
-        # return ((np.abs(np.diff(diff_img, axis=0, prepend=1))+np.abs(np.diff(diff_img, axis=1, prepend=1)))*mask).sum()
     else:
         return cost_abs(fixed_img, np.roll(img, shift, axis=[0, 1]), mask=mask, gfk=kernel, type='tv', order='i', filt=filt)
-        # diff_img = fixed_img - np.roll(img, shift, axis=[0, 1])
-        # return ((np.abs(np.diff(diff_img, axis=0, prepend=1))+np.abs(np.diff(diff_img, axis=1, prepend=1)))*mask).sum()
 
 
 def tv_l2_pixel(fixed_img, img, mask, shift, norm=True):
@@ -1476,218 +804,6 @@ def mrtv_reg5(levs=7, wz=10, sp_wz=1, sp_step=0.5, lsw=10, ps=None, imgs=None):
                                        [tv1_pxl[levs-2].reshape([wz, wz])[(idx[0]-sp_wz):(idx[0]+sp_wz+1), idx[1]],
                                         tv1_pxl[levs-2].reshape([wz, wz])[idx[0], (idx[1]-sp_wz):(idx[1]+sp_wz+1)]])
     return tv1_pxl, tv1_pxl_id, shift, s+shift[levs-1]
-
-
-# @msgit(wd=100, fill='-')
-# def mrtv_reg(pxl_conf, sub_conf, ps, imgs=None):
-#     """
-#     Provide a unified interace for using multi-resolution TV-based registration
-#     algorithm with different configuration options.
-
-#     Inputs:
-#     ______
-#         pxl_conf: dict; multi-resolution TV minimization configuration at
-#                   resolution higher than a single pixel; it includes items:
-#                   'type': 'area', 'line', 'al', 'la'
-#                   'levs': int
-#                   'wz': int
-#                   'lsw': int
-#                       levs=7, wz=10, sp_wz=1, sp_step=0.5, lsw=10, ps=None, imgs=None
-#         sub_conf: dict; sub-pixel TV minimization configuration; it includes
-#                   items:
-#                   'use': boolean; if conduct sub-pixel registration on the end
-#                   'type': ['ana', 'fit']; which sub-pixel routine to use
-#                   'sp_wz': int; for 'fit' option; the number of TV points to be
-#                            used in fitting
-#                   'sp_us': int; for 'ana' option; up-sampling factor
-#         ps: optonal; None or a 2-element tuple
-#         imgs: the pair of the images to be registered
-
-#     Outputs:
-#     _______
-#         tv_pxl: dict; TV at each search point under levels as the keywords
-#         tv_pxl_id: the id of the minimum TV in the flatted tv_pxl for each level
-#         shift: ndarray; shift at each level of resolution
-#         tot_shift: 2-element tuple; overall displacement between the pair of images
-#     """
-#     """
-#     single process version of mrtv_reg2. Parallelization is implemented
-#     on the upper level on which the alignments of pairs of images are
-#     parallelized
-#     """
-#     # print(pxl_conf)
-#     # print(sub_conf)
-#     # print(ps)
-#     if ps is not None:
-#         imgs[1] = np.real(np.fft.ifftn(
-#             fourier_shift(np.fft.fftn(imgs[1]), ps)))
-
-#     levs = pxl_conf['levs']
-#     w = pxl_conf['wz']
-#     step = {}
-#     tv_pxl = {}
-#     tv_pxl_id = np.zeros(levs, dtype=np.int16)
-#     shift = np.zeros([levs+1, 2], dtype=np.float32)
-
-#     for ii in range(levs):
-#         step[levs-1-ii] = 0.5**ii
-
-#     if ((np.array(imgs[0].shape)*0.5**(levs-2) - w) <= 0).any():
-#         return -1
-
-#     if pxl_conf['type'] == 'area':
-#         for ii in range(levs):
-#             s = step[ii]
-#             f = zoom(imgs[0], s)
-#             m = zoom(imgs[1], s)
-#             mk = np.zeros(m.shape, dtype=np.int8)
-#             mk[int(w*2**(ii-1)):-int(w*2**(ii-1)),
-#                int(w*2**(ii-1)):-int(w*2**(ii-1))] = 1
-
-#             sh = np.array([0, 0])
-#             for jj in range(ii):
-#                 sh = np.int_(sh + shift[jj]*2**(ii-jj))
-
-#             if ii == levs-1:
-#                 tem = np.ndarray([2*w, 2*w], dtype=np.float32)
-#                 for jj in range(2*w):
-#                     for kk in range(2*w):
-#                         tem[jj, kk] = tv_l1_pixel(f, m, mk,
-#                                                   [jj-w+sh[0],
-#                                                    kk-w+sh[1]])
-
-#                 tv_pxl[ii] = np.array(tem)
-#                 tv_pxl_id[ii] = tv_pxl[ii].argmin()
-#                 shift[ii, 0] = (tv_pxl_id[ii]//(2*w)-w)
-#                 shift[ii, 1] = (tv_pxl_id[ii] % (2*w)-w)
-#             else:
-#                 tem = np.ndarray([w, w], dtype=np.float32)
-#                 for jj in range(w):
-#                     for kk in range(w):
-#                         tem[jj, kk] = tv_l1_pixel(f, m, mk,
-#                                                   [jj-int(w/2)+sh[0],
-#                                                    kk-int(w/2)+sh[1]])
-
-#                 tv_pxl[ii] = np.array(tem)
-#                 tv_pxl_id[ii] = tv_pxl[ii].argmin()
-#                 shift[ii, 0] = (tv_pxl_id[ii]//w-int(w/2))
-#                 shift[ii, 1] = (tv_pxl_id[ii] % w-int(w/2))
-
-#             # tem = np.ndarray([w, w], dtype=np.float32)
-#             # for jj in range(w):
-#             #     for kk in range(w):
-#             #         tem[jj, kk] = tv_l1_pixel(f, m, mk,
-#             #                                   [jj-int(w/2)+sh[0],
-#             #                                    kk-int(w/2)+sh[1]])
-
-#             # tv_pxl[ii] = np.array(tem)
-#             # tv_pxl_id[ii] = tv_pxl[ii].argmin()
-#             # shift[ii, 0] = (tv_pxl_id[ii]//w-int(w/2))
-#             # shift[ii, 1] = (tv_pxl_id[ii] % w-int(w/2))
-#     elif pxl_conf['type'] == 'line':
-#         lsw = pxl_conf['lsw']
-#         shift = np.zeros([3, 2])
-#         tv_pxl_id = np.zeros(2, dtype=np.int16)
-
-#         tv_v = []
-#         mk = np.zeros(imgs[0].shape, dtype=np.int8)
-#         mk[int(lsw/2):-int(lsw/2), :] = 1
-#         for ii in range(lsw):
-#             tv_v.append(tv_l1_pixel(imgs[0], imgs[1], mk,
-#                                     [ii-int(lsw/2), 0]))
-#         shift[0, 0] = (np.array(tv_v).argmin() - int(lsw/2))
-#         tv_h = []
-#         mk = np.zeros(imgs[0].shape, dtype=np.int8)
-#         mk[:, int(lsw/2):-int(lsw/2)] = 1
-#         for ii in range(lsw):
-#             tv_h.append(tv_l1_pixel(imgs[0], imgs[1], mk,
-#                                     [0, ii-int(lsw/2)]))
-#         shift[0, 1] = (np.array(tv_h).argmin() - int(lsw/2))
-#         tv_pxl[0] = np.vstack(np.array(tv_v), np.array(tv_h))
-#         tv_pxl_id[0] = 0
-#         sh = shift
-#     elif pxl_conf['type'] == 'al':
-#         lsw = pxl_conf['lsw']
-#         for ii in range(levs):
-#             s = step[ii]
-#             f = zoom(imgs[0], s)
-#             m = zoom(imgs[1], s)
-#             mk = np.zeros(m.shape, dtype=np.int8)
-#             mk[int(w*2**(ii-1)):-int(w*2**(ii-1)),
-#                int(w*2**(ii-1)):-int(w*2**(ii-1))] = 1
-
-#             sh = np.array([0, 0])
-#             for jj in range(ii):
-#                 sh = np.int_(sh + shift[jj]*2**(ii-jj))
-
-#             if ii == levs-1:
-#                 tv_v = []
-#                 mk = np.zeros(imgs[0].shape, dtype=np.int8)
-#                 mk[int(lsw/2):-int(lsw/2), :] = 1
-#                 for kk in range(lsw):
-#                     tv_v.append(tv_l1_pixel(f, m, mk,
-#                                             [kk-int(lsw/2)+sh[0], sh[1]]))
-#                 sh[0] += (np.array(tv_v).argmin() - int(lsw/2))
-
-#                 tv_h = []
-#                 mk = np.zeros(imgs[0].shape, dtype=np.int8)
-#                 mk[:, int(lsw/2):-int(lsw/2)] = 1
-#                 for kk in range(lsw):
-#                     tv_h.append(tv_l1_pixel(f, m, mk,
-#                                             [sh[0], kk-int(lsw/2)+sh[1]]))
-#                 sh[1] += (np.array(tv_h).argmin() - int(lsw/2))
-
-#                 tem = np.ndarray([2*w, 2*w], dtype=np.float32)
-#                 for jj in range(2*w):
-#                     for kk in range(2*w):
-#                         tem[jj, kk] = tv_l1_pixel(f, m, mk,
-#                                                   [jj-w+sh[0],
-#                                                    kk-w+sh[1]])
-
-#                 tv_pxl[ii] = np.array(tem)
-#                 tv_pxl_id[ii] = tv_pxl[ii].argmin()
-#                 shift[ii, 0] = (tv_pxl_id[ii]//(2*w)-w)
-#                 shift[ii, 1] = (tv_pxl_id[ii] % (2*w)-w)
-#             else:
-#                 tem = np.ndarray([w, w], dtype=np.float32)
-#                 for jj in range(w):
-#                     for kk in range(w):
-#                         tem[jj, kk] = tv_l1_pixel(f, m, mk,
-#                                                   [jj-int(w/2)+sh[0],
-#                                                    kk-int(w/2)+sh[1]])
-
-#                 tv_pxl[ii] = np.array(tem)
-#                 tv_pxl_id[ii] = tv_pxl[ii].argmin()
-#                 shift[ii, 0] = (tv_pxl_id[ii]//w-int(w/2))
-#                 shift[ii, 1] = (tv_pxl_id[ii] % w-int(w/2))
-#         sh = sh + shift[levs-1]
-#     elif pxl_conf['type'] == 'la':
-#         # TODO
-#         pass
-
-#     if sub_conf['use']:
-#         # idx = np.int_(shift[levs-2] + int(w/2))
-#         idx = np.int_(shift[levs-1] + w)
-#         if sub_conf['type'] == 'fit':
-#             sw = int(sub_conf['sp_wz'])
-#             shift[levs] = tv_l1_subpixel_fit(np.linspace(-sw, sw, 2*sw+1),
-#                                              np.linspace(-10*sw,
-#                                                          10*sw, 20*sw+1),
-#                                              [tv_pxl[levs-1].reshape(2*w, 2*w)
-#                                               [(idx[0]-sw):(idx[0]+sw+1), idx[1]],
-#                                               tv_pxl[levs-1].reshape(2*w, 2*w)
-#                                               [idx[0], (idx[1]-sw):(idx[1]+sw+1)]])
-#         elif sub_conf['type'] == 'ana':
-#             us = int(sub_conf['sp_us'])
-#             shift[levs] = tv_l1_subpixel_ana(np.linspace(-1, 1, 3),
-#                                              np.linspace(-us, us, 2*us+1)/us,
-#                                              [tv_pxl[levs-1].reshape(2*w, 2*w)
-#                                               [(idx[0]-1):(idx[0]+2), idx[1]],
-#                                               tv_pxl[levs-1].reshape(2*w, 2*w)
-#                                               [idx[0], (idx[1]-1):(idx[1]+2)]])
-#     else:
-#         shift[levs] = [0, 0]
-#     return tv_pxl, tv_pxl_id, shift, sh+shift[levs]
 
 
 def mrtv_reg(pxl_conf, sub_conf, ps=None, kernel=3, imgs=None):
@@ -2612,14 +1728,12 @@ def mrtv_ls_combo_reg(ls_w=100, levs=2, wz=10, sp_wz=8, sp_step=0.5, kernel=3, i
         tv_v.append(tv_l1_pixel(imgs[0], imgs[1], 1, [2*ii-ls_w, 0],
                                 kernel=kernel))
     shift[0, 0] = 2*(np.array(tv_v).argmin() - int(ls_w/2))
-    # shift[0, 0] = (np.array(tv_v).argmin() - int(ls_w/2))
 
     tv_h = []
     for ii in range(ls_w):
         tv_h.append(tv_l1_pixel(imgs[0], imgs[1], 1, [0, 2*ii-ls_w],
                                 kernel=kernel))
     shift[0, 1] = 2*(np.array(tv_h).argmin() - int(ls_w/2))
-    # shift[0, 1] = (np.array(tv_h).argmin() - int(ls_w/2))
 
     tv1_pxl, tv1_pxl_id, shift[1:], ss = mrtv_reg3(levs=levs, wz=wz, sp_wz=sp_wz,
                                                    sp_step=sp_step, imgs=imgs,
@@ -2938,5 +2052,3 @@ def reg_stacks(refs, movs, method, *args, axis=0, filter=None, **kwargs):
         pool.join()
         shift = np.array(rlt)
     return shift
-
-

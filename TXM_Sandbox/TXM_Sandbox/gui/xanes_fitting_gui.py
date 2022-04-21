@@ -289,7 +289,6 @@ FULL_SAVE_ITEM_OPTIONS = ['norm_spec',
                           'weighted_eng',
                           'edge50_pos_fit',
                           'edge50_pos_dir',
-                          # 'edge0.5_pos_direct',
                           'edge_pos_fit',
                           'edge_fit_err',
                           'edge_pos_dir',
@@ -318,8 +317,6 @@ FULL_SAVE_DEFAULT = ['',
                      'weighted_eng',
                      'edge50_pos_fit',
                      'edge50_pos_dir',
-                     # 'edge0.5_pos_fit',
-                     # 'edge0.5_pos_direct',
                      'edge_pos_fit',
                      'edge_fit_err',
                      'edge_pos_dir',
@@ -403,7 +400,7 @@ class xanes_fitting_gui():
 
 
     def build_gui(self):
-        ## ## ## bin sub-tabs in each tab - analysis&display TAB in 3D_xanes TAB -- start
+        ## ## ## bundle sub-tabs in each tab - analysis&display TAB in 3D_xanes TAB -- start
         ## ## ## ## define functional widgets each tab in each sub-tab - analysis box in analysis&display TAB -- start
         layout = {'border':'3px solid #8855AA', 'width':f'{self.form_sz[1]-92}px', 'height':f'{0.98*(self.form_sz[0]-128)}px'}
         self.hs['Fitting form'] = widgets.VBox()
@@ -419,7 +416,6 @@ class xanes_fitting_gui():
         layout = {'border':'3px solid #FFCC00', 'width':f'{self.form_sz[1]-104}px', 'height':f'{0.07*(self.form_sz[0]-128)}px'}
         self.hs['FitTitle box'] = widgets.HBox()
         self.hs['FitTitle box'].layout = layout
-        # self.hs['FitTitle label'] = widgets.Text(value='XANES Fitting', disabled=True)
         self.hs['FitTitle label'] = widgets.HTML('<span style="color:red; font-size: 150%; font-weight: bold; background-color:rgb(135,206,250);">' + 'XANES Fitting' + '</span>')
         layout = {'background-color':'white', 'color':'cyan', 'left':'41%'}
         self.hs['FitTitle label'].layout = layout
@@ -438,7 +434,6 @@ class xanes_fitting_gui():
                                                           description_tooltip='wl: find whiteline positions without doing background removal and normalization; edge0.5: find energy point where the normalized spectrum value equal to 0.5; full: doing regular xanes preprocessing',
                                                           options=['wl', 'full'], value ='wl', disabled=True)
         self.hs['FitEngRagOptn drpdn'].layout = layout
-        # layout = {'width':'19%', 'height':'100%', 'top':'0%', 'visibility':'hidden'}
         layout = {'width':'19%', 'height':'90%'}
         self.hs['FitEngRagEdgeEng text'] = widgets.BoundedFloatText(description='edge eng',
                                                                     description_tooltip='edge energy (keV)',
@@ -541,11 +536,6 @@ class xanes_fitting_gui():
                                                            value=True, indent = False, disabled=False,
                                                            layout={'width':f'{0.25*self.form_sz[1]-104}px'})
         self.hs['FitItemConfigFitWl chbx'] = fit_pars_GridspecLayout[0, :39]
-        # fit_pars_GridspecLayout[0, 33:66] = widgets.Checkbox(description='fit edge',
-        #                                                      description_tooltip='fit edge if it is checked',
-        #                                                      value=False, indent = False, disabled=False,
-        #                                                      layout={'width':f'{0.25*self.form_sz[1]-104}px'})
-        # self.hs['FitItemConfigFitEdge chbx'] = fit_pars_GridspecLayout[0, 33:66]
         fit_pars_GridspecLayout[0, 39:78] = widgets.Checkbox(description='fit edge 50%',
                                                              description_tooltip='fit the position where normalized mu is 50% of maximum if it is checked',
                                                              value=True, indent=False, disabled=False,
@@ -580,7 +570,6 @@ class xanes_fitting_gui():
                                                                      value=1, min=1, max=10, step=1, disabled=True,
                                                                      layout={'width':f'{0.19 * (self.form_sz[1] - 104)}px'})
         self.hs['FitItemConfigBinFac text'] = fit_pars_GridspecLayout[1, 150:200]
-        # self.hs['FitItemConfigBinFac text'].layout = {'width':f'{0.19 * (self.form_sz[1] - 104)}px'}
 
         fit_pars_GridspecLayout[2, :20] = widgets.Checkbox(description='mask preview',
                                                            description_tooltip='preview edge jump and edge offset masks',
@@ -662,7 +651,6 @@ class xanes_fitting_gui():
         self.hs['FitItemConfigLCFRmRef btn'].style.button_color = 'darkviolet'
 
         self.hs['FitItemConfigFitWl chbx'].observe(self.fit_config_fit_wl_chbx_chg, names='value')
-        # self.hs['FitItemConfigFitEdge chbx'].observe(self.fit_config_fit_edge_chbx_chg, names='value')
         self.hs['FitItemConfigFitEdge50% chbx'].observe(self.fit_config_fit_edge50_chbx_chg, names='value')
         self.hs['FitItemConfigFitSpec chbx'].observe(self.fit_config_flt_spec_chbx_chg, names='value')
         self.hs['FitItemConfigCalWlDir chbx'].observe(self.fit_config_cal_wl_dir_chbx_chg, names='value')
@@ -1149,7 +1137,6 @@ class xanes_fitting_gui():
         self.bundle_fit_var_handles()
         self.boxes_logic()
 
-
     def boxes_logic(self):
         def compound_logic():
             if self.fit_wl_pos:
@@ -1266,7 +1253,6 @@ class xanes_fitting_gui():
         if not (self.parent_h.xanes_file_configured & self.parent_h.xanes_alignment_done):
             boxes = ['FitEngRag box']
             enable_disable_boxes(self.hs, boxes, disabled=True, level=-1)
-            # self.hs['FitItemConfigFitWl chbx'].value = 1
         else:
             boxes = ['FitEngRag box']
             enable_disable_boxes(self.hs, boxes, disabled=False, level=-1)
@@ -1295,7 +1281,6 @@ class xanes_fitting_gui():
         else:
             boxes = ['FitItem tab']
             enable_disable_boxes(self.hs, boxes, disabled=True, level=-1)
-
 
     def bundle_fit_var_handles(self):
         self.fit_wl_fit_func_arg_handles = [self.hs['FitConfigWlFitPars0 text'],
@@ -1348,7 +1333,6 @@ class xanes_fitting_gui():
                                               self.hs['FitConfigEdgeFitPars4Lb text'],
                                               self.hs['FitConfigEdgeFitPars4Ub text']]
 
-
     def fit_coef_num(self, ftype='wl_fit_coef'):
         if ftype == 'wl_fit_coef':
             if self.fit_wl_optimizer == 'scipy':
@@ -1364,7 +1348,6 @@ class xanes_fitting_gui():
             return 2
         elif ftype == 'pre_edge_fit_coef':
             return 2
-
 
     def set_save_items(self):
         if self.parent_h.xanes_fit_type == 'wl':
@@ -1443,7 +1426,6 @@ class xanes_fitting_gui():
             self.hs['FitSavSettingSel mulsel'].options = list(sorted(selects))
             self.hs['FitSavSettingSel mulsel'].value = ['']
 
-
     def set_xanes_analysis_eng_bounds(self):
         eng_list_len = self.parent_h.xanes_fit_eng_list.shape[0]
         if self.parent_h.xanes_fit_wl_fit_eng_e > self.parent_h.xanes_fit_eng_list.max():
@@ -1493,7 +1475,6 @@ class xanes_fitting_gui():
             self.hs['FitEngRagEdge0.5Str text'].max = self.parent_h.xanes_fit_eng_list.max()
             self.hs['FitEngRagEdge0.5Str text'].min = self.parent_h.xanes_fit_eng_list.min()
 
-
     def update_fit_params(self):
         self.parent_h.xanes_fit_type = self.hs['FitEngRagOptn drpdn'].value
         if self.parent_h.xanes_fit_type == 'wl':
@@ -1522,7 +1503,6 @@ class xanes_fitting_gui():
             self.parent_h.xanes_fit_edge_0p5_fit_e = self.hs['FitEngRagEdge0.5End text'].value
 
             self.fit_wl_pos = self.hs['FitItemConfigFitWl chbx'].value
-            # self.fit_edge_pos = self.hs['FitItemConfigFitEdge chbx'].value
             self.fit_edge50_pos = self.hs['FitItemConfigFitEdge50% chbx'].value
             self.find_wl_pos_dir = self.hs['FitItemConfigCalWlDir chbx'].value
             self.find_edge50_pos_dir = self.hs['FitItemConfigCalEdge50%Dir chbx'].value
@@ -1553,11 +1533,9 @@ class xanes_fitting_gui():
             self.parent_h.update_xanes2D_config()
             json.dump(self.parent_h.xanes_config, open(self.parent_h.xanes_file_save_trial_reg_config_filename, 'w'), cls=NumpyArrayEncoder)
 
-
     def fit_eng_rag_optn_drpdn(self, a):
         self.parent_h.xanes_fit_eng_configured = False
         self.xanes_fit_eng_config = False
-
         self.hs['FitEngRagEdgeEng text'].value = self.parent_h.xanes_fit_edge_eng
         self.hs['FitEngRagWlFitEnd text'].value = self.parent_h.xanes_fit_wl_fit_eng_e
         self.hs['FitEngRagWlFitStr text'].value = self.parent_h.xanes_fit_wl_fit_eng_s
@@ -1578,23 +1556,6 @@ class xanes_fitting_gui():
             self.hs['FitEngRagEdge0.5Str text'].layout = layout
             layout = {'width': '19%', 'height': '100%', 'top': '25%', 'visibility': 'hidden'}
             self.hs['FitEngRagEdge0.5End text'].layout = layout
-
-            # self.hs['FitItemConfigFitWl chbx'].value = True
-            # self.hs['FitItemConfigFitEdge chbx'].value = False
-            # self.hs['FitItemConfigFitEdge50% chbx'].value = False
-            # self.hs['FitItemConfigFitSpec chbx'].value = False
-            # self.hs['FitItemConfigCalWlDir chbx'].value = False
-            # self.hs['FitItemConfigCalEdge50%Dir chbx'].value = False
-            # self.hs['FitItemConfigFitPrvw chbx'].value = False
-            
-            # self.hs['FitItemConfigCalWlDir chbx'].disabled = True
-            # self.hs['FitItemConfigFitEdge chbx'].disabled = True
-            # self.hs['FitItemConfigFitEdge50% chbx'].disabled = True
-            # self.hs['FitItemConfigCalEdge50%Dir chbx'].disabled = True
-            # self.hs['FitItemConfigEdgeJumpThres sldr'].disabled = True
-            # self.hs['FitItemConfigEdgeOfstThres sldr'].disabled = True
-            # self.hs['FitItemConfigFitPrvw chbx'].disabled = True
-            # self.fit_mask_prev = False
         elif a['owner'].value == 'full':
             layout = {'width': '19%', 'height': '100%', 'top': '15%', 'visibility': 'visible'}
             self.hs['FitEngRagEdgeEng text'].layout = layout
@@ -1612,27 +1573,9 @@ class xanes_fitting_gui():
             self.hs['FitEngRagEdge0.5Str text'].layout = layout
             layout = {'width': '19%', 'height': '100%', 'top': '25%', 'visibility': 'visible'}
             self.hs['FitEngRagEdge0.5End text'].layout = layout
-
-            # self.hs['FitItemConfigFitWl chbx'].value = True
-            # self.hs['FitItemConfigFitEdge chbx'].value = False
-            # self.hs['FitItemConfigFitEdge50% chbx'].value = True
-            # self.hs['FitItemConfigFitSpec chbx'].value = False
-            # self.hs['FitItemConfigCalWlDir chbx'].value = False
-            # self.hs['FitItemConfigCalEdge50%Dir chbx'].value = False
-            # self.hs['FitItemConfigFitPrvw chbx'].value = False
-                        
-            # self.hs['FitItemConfigFitWl chbx'].disabled = False
-            # self.hs['FitItemConfigCalWlDir chbx'].disabled = False
-            # self.hs['FitItemConfigFitEdge chbx'].disabled = False
-            # self.hs['FitItemConfigFitEdge50% chbx'].disabled = False
-            # self.hs['FitItemConfigCalEdge50%Dir chbx'].disabled = False
-            # self.hs['FitItemConfigFitPrvw chbx'].disabled = False
-            # self.hs['FitItemConfigEdgeJumpThres sldr'].disabled = False
-            # self.hs['FitItemConfigEdgeOfstThres sldr'].disabled = False
         self.hs['FitRun text'].value ='please check your settings before run the analysis ...'
         self.fit_flt_prev_configed = False
         self.boxes_logic()
-
 
     def fit_eng_rag_edge_eng_text_chg(self, a):
         self.parent_h.xanes_fit_eng_configured = False
@@ -1641,14 +1584,12 @@ class xanes_fitting_gui():
         self.parent_h.xanes_fit_edge_eng = self.hs['FitEngRagEdgeEng text'].value
         self.hs['FitRun text'].description ='please check your settings before run the analysis ...'
 
-
     def fit_eng_rag_pre_edge_end_text_chg(self, a):
         self.parent_h.xanes_fit_eng_configured = False
         self.xanes_fit_eng_config = False
         self.fit_flt_prev_configed = False
         self.parent_h.xanes_fit_pre_edge_e = self.hs['FitEngRagPreEdgeEnd text'].value
         self.hs['FitRun text'].description ='please check your settings before run the analysis ...'
-
 
     def fit_eng_rag_post_edge_str_text_chg(self, a):
         self.parent_h.xanes_fit_eng_configured = False
@@ -1657,13 +1598,11 @@ class xanes_fitting_gui():
         self.parent_h.xanes_fit_post_edge_s = self.hs['FitEngRagPostEdgeStr text'].value
         self.hs['FitRun text'].description ='please check your settings before run the analysis ...'
 
-
     def fit_eng_rag_wl_fit_str_text_chg(self, a):
         self.parent_h.xanes_fit_eng_configured = False
         self.xanes_fit_eng_config = False
         self.hs['FitRun text'].value ='please check your settings before run the analysis ...'
         self.parent_h.xanes_fit_wl_fit_eng_s = self.hs['FitEngRagWlFitStr text'].value
-
 
     def fit_eng_rag_wl_fit_end_text_chg(self, a):
         self.parent_h.xanes_fit_eng_configured = False
@@ -1671,13 +1610,11 @@ class xanes_fitting_gui():
         self.hs['FitRun text'].value ='please check your settings before run the analysis ...'
         self.parent_h.xanes_fit_wl_fit_eng_e = self.hs['FitEngRagWlFitEnd text'].value
 
-
     def fit_eng_rag_edge50_fit_str_text_chg(self, a):
         self.parent_h.xanes_fit_eng_configured = False
         self.xanes_fit_eng_config = False
         self.hs['FitRun text'].value ='please check your settings before run the analysis ...'
         self.parent_h.xanes_fit_edge_0p5_fit_s = self.hs['FitEngRagEdge0.5Str text'].value
-
 
     def fit_eng_rag_edge50_fit_end_text_chg(self, a):
         self.parent_h.xanes_fit_eng_configured = False
@@ -1685,25 +1622,14 @@ class xanes_fitting_gui():
         self.hs['FitRun text'].value ='please check your settings before run the analysis ...'
         self.parent_h.xanes_fit_edge_0p5_fit_e = self.hs['FitEngRagEdge0.5End text'].value
 
-
     def fit_eng_rag_cmf_btn_clk(self, a):
         self.update_fit_params()
         self.parent_h.xanes_fit_type = self.hs['FitEngRagOptn drpdn'].value
         if self.parent_h.xanes_fit_type == 'wl':
             self.parent_h.xanes_fit_wl_fit_eng_s = self.hs['FitEngRagWlFitStr text'].value
             self.parent_h.xanes_fit_wl_fit_eng_e = self.hs['FitEngRagWlFitEnd text'].value
-            # self.hs['FitItemConfigCalWlDir chbx'].disabled = True
-            # self.hs['FitItemConfigFitEdge chbx'].disabled = True
-            # self.hs['FitItemConfigFitEdge50% chbx'].disabled = True
-            # self.hs['FitItemConfigCalEdge50%Dir chbx'].disabled = True
-            # self.hs['FitItemConfigEdgeJumpThres sldr'].disabled = True
-            # self.hs['FitItemConfigEdgeOfstThres sldr'].disabled = True
-            # self.hs['FitItemConfigFitPrvw chbx'].disabled = True
-            # self.hs['FitItemConfigCalEdge50%Dir chbx'].value = False
-            # self.find_edge50_pos_dir = False
 
             self.hs['FitItemConfigFitWl chbx'].value = True
-            # self.hs['FitItemConfigFitEdge chbx'].value = False
             self.hs['FitItemConfigFitEdge50% chbx'].value = False
             self.hs['FitItemConfigFitSpec chbx'].value = False
             self.hs['FitItemConfigCalWlDir chbx'].value = False
@@ -1724,11 +1650,7 @@ class xanes_fitting_gui():
             self.parent_h.xanes_fit_wl_fit_eng_e = self.hs['FitEngRagWlFitEnd text'].value
             self.parent_h.xanes_fit_edge_0p5_fit_s = self.hs['FitEngRagEdge0.5Str text'].value
             self.parent_h.xanes_fit_edge_0p5_fit_e = self.hs['FitEngRagEdge0.5End text'].value
-            # self.hs['FitItemConfigCalEdge50%Dir chbx'].disabled = False
-            # self.hs['FitItemConfigCalEdge50%Dir chbx'].value = True
-            # self.find_edge50_pos_dir = True
             self.hs['FitItemConfigFitWl chbx'].value = True
-            # self.hs['FitItemConfigFitEdge chbx'].value = False
             self.hs['FitItemConfigFitEdge50% chbx'].value = True
             self.hs['FitItemConfigFitSpec chbx'].value = False
             self.hs['FitItemConfigCalWlDir chbx'].value = False
@@ -1767,8 +1689,6 @@ class xanes_fitting_gui():
         self.hs['FitConfigWlOptmzr drpdn'].value = 'numpy'
         self.hs['FitConfigWlFunc drpdn'].options = [2, 3, 4]
         self.hs['FitConfigWlFunc drpdn'].value = 2
-        # self.hs['FitConfigWlOptmzr drpdn'].value = 'scipy'
-        # self.hs['FitConfigWlFunc drpdn'].value = 'lorentzian'
         self.hs['FitConfigEdgeOptmzr drpdn'].value = 'numpy'
         self.hs['FitConfigEdgeFunc drpdn'].options = [2, 3, 4]
         self.hs['FitConfigEdgeFunc drpdn'].value = 3
@@ -1776,7 +1696,6 @@ class xanes_fitting_gui():
         self.xanes_fit_eng_config = True
         self.boxes_logic()
         self.set_save_items()
-
 
     def fit_config_fit_wl_chbx_chg(self, a):
         if a['owner'].value:
@@ -1794,60 +1713,37 @@ class xanes_fitting_gui():
         self.boxes_logic()
         self.set_save_items()
 
-
-    # def fit_config_fit_edge_chbx_chg(self, a):
-    #     if a['owner'].value:
-    #         self.fit_edge_pos = True
-    #         boxes = ['FitConfigEdgePars box']
-    #         enable_disable_boxes(self.hs, boxes, disabled=False, level=-1)
-    #         self.hs['FitConfigEdgeOptmzr drpdn'].value = 'numpy'
-    #         self.hs['FitConfigEdgeFunc drpdn'].options = [2, 3, 4]
-    #         self.hs['FitConfigEdgeFunc drpdn'].value = 3
-    #     else:
-    #         self.fit_edge_pos = False
-    #         boxes = ['FitConfigEdgePars box']
-    #         enable_disable_boxes(self.hs, boxes, disabled=True, level=-1)
-    #     self.set_save_items()
-    #     self.boxes_logic()
-
     def fit_config_fit_edge50_chbx_chg(self, a):
         self.fit_edge50_pos = a['owner'].value
         self.boxes_logic()
         self.set_save_items()
 
-
     def fit_config_flt_spec_chbx_chg(self, a):
         self.fit_use_flt_spec = a['owner'].value
         self.set_save_items()
-
 
     def fit_config_cal_wl_dir_chbx_chg(self, a):
         self.find_wl_pos_dir = a['owner'].value
         self.set_save_items()
         self.boxes_logic()
 
-
     def fit_config_cal_edge50_dir_chbx_chg(self, a):
         self.find_edge50_pos_dir = a['owner'].value
         self.set_save_items()
-
 
     def fit_config_fit_edge_jump_thres_sldr_chg(self, a):
         self.fit_flt_prev_maskit = False
         self.parent_h.xanes_fit_edge_jump_thres = a['owner'].value
         self.boxes_logic()
 
-
     def fit_config_fit_edge_ofst_thres_sldr_chg(self, a):
         self.fit_flt_prev_maskit = False
         self.parent_h.xanes_fit_edge_offset_thres = a['owner'].value
         self.boxes_logic()
 
-
     def fit_config_bin_fac_text_chg(self, a):
         self.fit_img_bin_fac = a['owner'].value
         self.boxes_logic()
-
 
     def fit_config_mask_prvw_chbx_chg(self, a):
         if a['owner'].value:
@@ -1866,14 +1762,12 @@ class xanes_fitting_gui():
             self.hs['FitItemConfigFitPrvwSli sldr'].disabled = True
         self.boxes_logic()
 
-
     def fit_config_flt_prvw_sli_sldr_chg(self, a):
         self.fit_flt_prev_sli = a['owner'].value
         if self.parent_h.gui_name == 'xanes3D':
             with h5py.File(self.parent_h.xanes_save_trial_reg_filename, 'r') as f:
                 self.spec = f['/registration_results/reg_results/registered_xanes3D'][:, :, self.fit_flt_prev_sli, :]
             self.fit_flt_prev_configed = False
-
 
     def fit_config_flt_prvw_calc_btn_clk(self, a):
         tmp_file = os.path.join(self.global_h.tmp_dir, 'xanes2D_tmp.h5')
@@ -1891,28 +1785,6 @@ class xanes_fitting_gui():
             self.pre_ee_idx = xm.index_of(self.parent_h.xanes_fit_eng_list, self.parent_h.xanes_fit_pre_edge_e)
             self.post_es_idx = xm.index_of(self.parent_h.xanes_fit_eng_list, self.parent_h.xanes_fit_post_edge_s)
             self.post_ee_idx = xm.index_of(self.parent_h.xanes_fit_eng_list, self.parent_h.xanes_fit_eng_list[-1])
-            # self.fit_flt_prev_xana = xa.xanes_analysis(self.spec,
-            #                                            self.parent_h.xanes_fit_eng_list,
-            #                                            self.parent_h.xanes_fit_edge_eng,
-            #                                            pre_ee=self.parent_h.xanes_fit_pre_edge_e,
-            #                                            post_es=self.parent_h.xanes_fit_post_edge_s,
-            #                                            edge_jump_threshold=self.parent_h.xanes_fit_edge_jump_thres,
-            #                                            pre_edge_threshold=self.parent_h.xanes_fit_edge_offset_thres)
-            # self.fit_flt_prev_xana.cal_pre_edge_sd()
-            # self.fit_flt_prev_xana.cal_post_edge_sd()
-            # self.fit_flt_prev_xana.cal_pre_edge_mean()
-            # self.fit_flt_prev_xana.cal_post_edge_mean()
-            #
-            # self.e0_idx = xm.index_of(self.fit_flt_prev_xana.eng,
-            #                           self.fit_flt_prev_xana.preset_edge_eng)
-            # self.pre = self.fit_flt_prev_xana.cal_pre_edge_fit()
-            # self.post = self.fit_flt_prev_xana.cal_post_edge_fit()
-            #
-            # self.edge_jump_mask = np.squeeze((self.post[self.e0_idx]-self.pre[self.e0_idx])
-            #                                  > self.fit_flt_prev_xana.edge_jump_thres*self.fit_flt_prev_xana.pre_edge_sd_map).astype(np.int8)
-            # self.fitted_edge_mask = np.any((self.post-self.pre)
-            #                                > self.fit_flt_prev_xana.fitted_edge_thres*self.fit_flt_prev_xana.pre_edge_sd_map, axis=0).astype(np.int8)
-            # self.fit_flt_prev_configed = True
 
             ln = 0
             code = {}
@@ -2014,7 +1886,6 @@ class xanes_fitting_gui():
                 self.fit_flt_prev_maskit = False
         self.boxes_logic()
 
-
     def fit_config_flt_prvw_em_it_btn_clk(self, a):
         if self.parent_h.gui_name == 'xanes3D':
             data_state, viewer_state = fiji_viewer_state(self.global_h, self, viewer_name='xanes3D_fit_maskit_viewer')
@@ -2034,7 +1905,6 @@ class xanes_fitting_gui():
                                                                                                      self.global_h.ij.py.to_java(self.edge_jump_mask*self.spec[int(self.spec.shape[0]/2)])),
                                                                                              self.global_h.ImagePlusClass))
             self.global_h.ij.py.run_macro("""run("Enhance Contrast", "saturated=0.35")""")
-
 
     def fit_config_flt_prvw_om_it_btn_clk(self, a):
         if self.parent_h.gui_name == 'xanes3D':
@@ -2056,7 +1926,6 @@ class xanes_fitting_gui():
                                                                                              self.global_h.ImagePlusClass))
             self.global_h.ij.py.run_macro("""run("Enhance Contrast", "saturated=0.35")""")
 
-
     def fit_config_flt_prvw_emom_it_btn_clk(self, a):
         if self.parent_h.gui_name == 'xanes3D':
             data_state, viewer_state = fiji_viewer_state(self.global_h, self, viewer_name='xanes3D_fit_maskit_viewer')
@@ -2077,7 +1946,6 @@ class xanes_fitting_gui():
                                                                                              self.global_h.ImagePlusClass))
             self.global_h.ij.py.run_macro("""run("Enhance Contrast", "saturated=0.35")""")
 
-
     def fit_config_lcf_chbx_chg(self, a):
         if a['owner'].value:
             self.fit_lcf = True
@@ -2089,10 +1957,8 @@ class xanes_fitting_gui():
         self.set_save_items()
         self.boxes_logic()
 
-
     def fit_config_lcf_cnst_chbx_chg(self, a):
         self.fit_lcf_constr = a['owner'].value
-
 
     def fit_config_num_spec_text_chg(self, a):
         self.fit_lcf_ref_num = a['owner'].value
@@ -2100,7 +1966,6 @@ class xanes_fitting_gui():
         self.hs['FitItemConfigLCFRef list'].options = []
         self.hs['FitItemConfigLCFSelRef btn'].disabled = False
         self.boxes_logic()
-
 
     def fit_config_sel_ref_btn_clk(self, a):
         if len(self.hs['FitItemConfigLCFRef list'].options) < self.fit_lcf_ref_num:
@@ -2117,12 +1982,10 @@ class xanes_fitting_gui():
                     os.path.abspath(a.files[0]))
         self.boxes_logic()
 
-
     def fit_config_ref_spec_list_chg(self, a):
         if len(self.hs['FitItemConfigLCFRef list'].options) < self.fit_lcf_ref_num:
             self.hs['FitItemConfigLCFSelRef btn'].disabled = False
         self.boxes_logic()
-
 
     def fit_config_ref_rm_btn_clk(self, a):
         self.fit_lcf_ref_spec = \
@@ -2133,11 +1996,9 @@ class xanes_fitting_gui():
         self.hs['FitItemConfigLCFRef list'].options = tem
         self.boxes_logic()
 
-
     def fit_config_wl_optmzr_drpdn_chg(self, a):
         self.fit_wl_optimizer = a['owner'].value
         self.boxes_logic()
-
 
     def fit_config_wl_func_drpdn_chg(self, a):
         self.fit_wl_fit_func = a['owner'].value
@@ -2157,7 +2018,6 @@ class xanes_fitting_gui():
         if self.fit_wl_fit_func == "step":
             self.fit_wl_fit_func_arg_handles[5].options = ['linear', 'atan', 'erf', 'logisitic']
 
-
     def fit_config_wl_fit_bnd_chbx_chg(self, a):
         self.fit_wl_fit_use_param_bnd = a['owner'].value
         if self.fit_wl_fit_use_param_bnd:
@@ -2174,11 +2034,9 @@ class xanes_fitting_gui():
             for ii in self.fit_wl_fit_func_bnd_handles:
                 ii.disabled = True
 
-
     def fit_config_edge_optmzr_drpdn_chg(self, a):
         self.fit_edge_optimizer = a['owner'].value
         self.boxes_logic()
-
 
     def fit_config_edge_func_drpdn_chg(self, a):
         self.fit_edge_fit_func = a['owner'].value
@@ -2198,7 +2056,6 @@ class xanes_fitting_gui():
         if self.fit_edge_fit_func == "step":
             self.fit_edge_fit_func_arg_handles[5].options = ['linear', 'atan', 'erf', 'logisitic']
 
-
     def fit_config_edge_fit_bnd_chbx_chg(self, a):
         self.fit_edge_fit_use_param_bnd = a['owner'].value
         if self.fit_edge_fit_use_param_bnd:
@@ -2213,7 +2070,6 @@ class xanes_fitting_gui():
             for ii in self.fit_edge_fit_func_bnd_handles:
                 ii.disabled = True
 
-
     def fit_sav_setting_add_btn_clk(self, a):
         self.analysis_saving_items = set(self.hs['FitSavSettingSel mulsel'].options)
         for ii in self.hs['FitSavSetting mulsel'].value:
@@ -2223,7 +2079,6 @@ class xanes_fitting_gui():
         tem.add('')
         self.hs['FitSavSettingSel mulsel'].options = sorted(tem)
         self.hs['FitSavSettingSel mulsel'].value = ['']
-
 
     def fit_sav_setting_rm_btn_clk(self, a):
         self.analysis_saving_items = set(self.hs['FitSavSettingSel mulsel'].options)
@@ -2235,7 +2090,6 @@ class xanes_fitting_gui():
         tem.add('')
         self.hs['FitSavSettingSel mulsel'].options = sorted(tem)
         self.hs['FitSavSettingSel mulsel'].value = list('centroid_of_eng')
-
 
     def fit_run_btn_clk(self, a):
         try:
@@ -2297,7 +2151,6 @@ class xanes_fitting_gui():
             edge_fvars = []
             edge_bnds = []
             edge_params = {}
-
             edge_params['eoff'] = self.parent_h.xanes_fit_edge_eng
             edge_params['optimizer'] = self.fit_edge_optimizer
             edge_params['ftype'] = 'edge'
@@ -2988,5 +2841,4 @@ class xanes_fitting_gui():
             else:
                 self.hs['FitRun text'].value = 'somthing wrong in analysis ...'
             self.parent_h.update_xanes2D_config()
-
         self.parent_h.boxes_logic()

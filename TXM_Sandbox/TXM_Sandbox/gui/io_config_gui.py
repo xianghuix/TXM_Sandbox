@@ -19,7 +19,6 @@ class io_config_gui():
         self.global_h = parent_h
         self.hs = {}
 
-
     def boxes_logics(self):
         if self.hs['IOOptnH5 chbx'].value:
             boxes = ['IOUserRdr box']
@@ -43,7 +42,6 @@ class io_config_gui():
             enable_disable_boxes(self.hs, boxes, disabled=True, level=-1)
             boxes = ['IOUserRdr box']
             enable_disable_boxes(self.hs, boxes, disabled=False, level=-1) 
-
 
     def build_gui(self):
         ## ## ## reader option -- start
@@ -368,14 +366,8 @@ class io_config_gui():
                                              self.hs['IOCfm box']]
         ## ## ## structured h5 -- end
 
-
     def io_optn_chbx_chg(self, a):
-        # if a['owner'].value:
-        #     self.global_h.use_struc_h5_reader = True
-        # else:
-        #     self.global_h.use_struc_h5_reader = False
         self.boxes_logics()
-
 
     def io_cfm_btn_clk(self, a):
         save_io_config(self)
@@ -391,15 +383,13 @@ class io_config_gui():
             self.global_h.xanes3D_gui.xanes3D_recon_dir_temp = self.global_h.io_xanes3D_cfg['structured_h5_reader']['xanes3D_recon_dir_template']
             self.global_h.xanes3D_gui.xanes3D_recon_fn_temp = self.global_h.io_xanes3D_cfg['structured_h5_reader']['xanes3D_recon_fn_template']
 
-
     def io_spec_tomo_rdr_btn_clk(self, a):
         if len(a.files[0]) != 0:
             self.hs['IOSpecTomoRdr text'].value = a.files[0]        
             save_io_config(self)
             with open(self.global_h.io_data_struc_tomo_cfg_file, 'r') as f:
                 self.global_h.io_tomo_cfg = json.load(f)
-        
-    
+
     def io_spec_xanes2D_rdr_btn_clk(self, a):
         if len(a.files[0]) != 0:
             self.hs['IOSpecXANES2DRdr text'].value = a.files[0]
@@ -407,14 +397,12 @@ class io_config_gui():
             with open(self.global_h.io_data_struc_xanes2D_cfg_file, 'r') as f:
                 self.global_h.io_xanes2D_cfg = json.load(f)
 
-
     def io_spec_xanes3D_rdr_btn_clk(self, a):
         if len(a.files[0]) != 0:
             self.hs['IOSpecXANES3DRdr text'].value = a.files[0]
             save_io_config(self)
             with open(self.global_h.io_data_struc_xanes3D_cfg_file, 'r') as f:
                 self.global_h.io_xanes3D_cfg = json.load(f)
-
 
     def io_fn_def_patn_cfm_btn_clk(self, a):
         save_io_config(self)

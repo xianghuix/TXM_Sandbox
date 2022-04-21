@@ -17,6 +17,7 @@ from scipy.ndimage import gaussian_filter
 def smooth_flat(flat, sigma):
     flat[:] = gaussian_filter(flat, sigma)[:]
     
+    
 def normalize_raw(imgs, flat, dark):
     imgs[:] = (imgs - dark)/(flat - dark)[:]
     imgs[imgs<0] = 1

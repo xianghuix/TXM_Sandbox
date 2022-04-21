@@ -60,7 +60,6 @@ class txm_gui():
         self.io_data_struc_tomo_cfg_file = os.path.join(tem, 'config', 'io_tomo_h5_data_structure.json')
         self.io_data_struc_xanes2D_cfg_file = os.path.join(tem, 'config', 'io_xanes2D_h5_data_structure.json')
         self.io_data_struc_xanes3D_cfg_file = os.path.join(tem, 'config', 'io_xanes3D_h5_data_structure.json')
-        # self.use_struc_h5_reader = True
 
         self.xanes2D_external_command_name = os.path.join(os.path.abspath(os.path.curdir), 'xanes2D_external_command.py')
         self.xanes3D_external_command_name = os.path.join(os.path.abspath(os.path.curdir), 'xanes3D_external_command.py')
@@ -162,7 +161,6 @@ class txm_gui():
         self.hs['IOConfig tab'].children = [self.io_config_gui.hs['IOOptn form'],
                                             self.io_config_gui.hs['IOConfig form']]
         self.hs['IOConfig tab'].set_title(0, 'IO Option')
-        # self.hs['IOConfig tab'].set_title(1, 'Default Fn Pattern')
         self.hs['IOConfig tab'].set_title(1, 'Struct h5 IO')
         
         try:

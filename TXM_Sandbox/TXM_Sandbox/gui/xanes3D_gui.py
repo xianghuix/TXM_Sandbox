@@ -235,7 +235,6 @@ class xanes3D_tools_gui():
         self.xanes_ana_gui_h = xag.xanes_analysis_gui(self, form_sz=self.form_sz)
         self.xanes_ana_gui_h.build_gui()
 
-
     def lock_message_text_boxes(self):
         boxes = ['SelRawH5Path text',
                  'SelReconPath text',
@@ -252,7 +251,6 @@ class xanes3D_tools_gui():
                  'VisSpecView text']
         enable_disable_boxes(self.hs, boxes, disabled=True, level=-1)
         self.xanes_fit_gui_h.hs['FitRun text'].disabled=True
-
 
     def update_xanes3D_config(self):
         self.xanes_config = {"filepath config": dict(xanes3D_raw_3D_h5_top_dir=self.xanes_raw_3D_h5_top_dir,
@@ -347,11 +345,9 @@ class xanes3D_tools_gui():
                                                     xanes3D_analysis_type=self.xanes_fit_type)
                              }
 
-
     def read_xanes3D_config(self):
         with open(self.xanes_save_trial_reg_config_filename_original, 'r') as f:
             self.xanes_config = json.load(f)
-
 
     def set_xanes3D_variables(self):
         self.xanes_raw_3D_h5_top_dir = self.xanes_config["filepath config"]["xanes3D_raw_3D_h5_top_dir"]
@@ -419,7 +415,6 @@ class xanes3D_tools_gui():
 
         self.boxes_logic()
 
-
     def set_xanes3D_handles(self):
         self.hs['SelScanIdStart drpdn'].options = self.xanes_config["indeices config"]["select_scan_id_start_text_options"]
         self.hs['SelScanIdEnd drpdn'].options = self.xanes_config["indeices config"]["select_scan_id_end_text_options"]
@@ -485,7 +480,6 @@ class xanes3D_tools_gui():
             self.xanes_config["align 3D recon"]["xanes3D_analysis_edge_0p5_fit_e"]
 
         self.boxes_logic()
-
 
     def boxes_logic(self):
         def xanes3D_compound_logic():
@@ -890,7 +884,6 @@ class xanes3D_tools_gui():
         self.lock_message_text_boxes()
         xanes3D_compound_logic()
 
-
     def build_gui(self):
         """
         hs: widget handler sets; hs is a multi-layer structured dictionary. Layers
@@ -936,7 +929,6 @@ class xanes3D_tools_gui():
                   'height':f'{0.07*(self.form_sz[0]-136)}px'}
         self.hs['SelFile&PathTitle box'] = widgets.HBox()
         self.hs['SelFile&PathTitle box'].layout = layout
-        # self.hs['SelFile&PathTitle label'] = widgets.Text(value='Config Files', disabled=True)
         self.hs['SelFile&PathTitle label'] = widgets.HTML('<span style="color:red; font-size: 150%; font-weight: bold; background-color:rgb(135,206,250);">' + 'Config Dirs & Files' + '</span>')
         layout = {'background-color':'white', 'color':'cyan', 'left':'39%'}
         self.hs['SelFile&PathTitle label'].layout = layout
@@ -1166,13 +1158,13 @@ class xanes3D_tools_gui():
                   'height':f'{0.35*(self.form_sz[0]-136)}px'}
         self.hs['3DRoi box'] = widgets.VBox()
         self.hs['3DRoi box'].layout = layout
+
         ## ## ## ## ## label 3D_roi_title box
         layout = {'border':'3px solid #FFCC00', 'width':f'{self.form_sz[1] - base_wz_os - ex_ws_os}px',
                   'height':f'{0.07*(self.form_sz[0]-136)}px'}
         self.hs['3DRoiTitle box'] = widgets.HBox()
         self.hs['3DRoiTitle box'].layout = layout
         self.hs['3DRoiTitle text'] = widgets.HTML('<span style="color:red; font-size: 150%; font-weight: bold; background-color:rgb(135,206,250);">' + 'Config 3D ROI' + '</span>')
-        # self.hs['3DRoiTitle text'] = widgets.Text(value='Config 3D ROI', disabled=True)
         layout = {'justify-content':'center', 'background-color':'white', 'color':'cyan', 'left':'43%', 'height':'90%'}
         self.hs['3DRoiTitle text'].layout = layout
         self.hs['3DRoiTitle box'].children = [self.hs['3DRoiTitle text']]
@@ -1237,13 +1229,13 @@ class xanes3D_tools_gui():
                   'height':f'{0.42*(self.form_sz[0]-136)}px'}
         self.hs['ConfigRegParams box'] = widgets.VBox()
         self.hs['ConfigRegParams box'].layout = layout
+
         ## ## ## ## ## label config_reg_params box
         layout = {'border':'3px solid #FFCC00', 'width':f'{self.form_sz[1] - base_wz_os - ex_ws_os}px',
                   'height':f'{0.07*(self.form_sz[0]-136)}px'}
         self.hs['ConfigRegParamsTitle box'] = widgets.HBox()
         self.hs['ConfigRegParamsTitle box'].layout = layout
         self.hs['ConfigRegParamsTitle text'] = widgets.HTML('<span style="color:red; font-size: 150%; font-weight: bold; background-color:rgb(135,206,250);">' + 'Config Reg Params' + '</span>')
-        # self.hs['ConfigRegParamsTitle text'] = widgets.Text(value='Config Reg Params', disabled=True)
         layout = {'background-color':'white', 'color':'cyan', 'left':'40.5%', 'height':'90%'}
         self.hs['ConfigRegParamsTitle text'].layout = layout
         self.hs['ConfigRegParamsTitle box'].children = [self.hs['ConfigRegParamsTitle text']]
@@ -1351,7 +1343,6 @@ class xanes3D_tools_gui():
                                                                 description_tooltip='subpxl wz: final sub-pixel fitting points')
         layout = {'width':'19%'}
         self.hs['MRTVSubpixelWz text'].layout = layout
-        # 'us factor: upsampling factor for subpixel search',
 
         self.hs['MRTVSubpixelKernel text'] = widgets.BoundedIntText(value=3, min=2, max=20, step=1,
                                                                     description='kernel wz', disabled=True,
@@ -1460,6 +1451,7 @@ class xanes3D_tools_gui():
                   'height':f'{0.35*(self.form_sz[0]-136)}px'}
         self.hs['RevRegRlt box'] = widgets.VBox()
         self.hs['RevRegRlt box'].layout = layout
+
         ## ## ## ## ## label the box
         layout = {'border':'3px solid #FFCC00', 'width':f'{self.form_sz[1] - base_wz_os - ex_ws_os}px',
                   'height':f'{0.07*(self.form_sz[0]-136)}px'}
@@ -1570,13 +1562,13 @@ class xanes3D_tools_gui():
                   'height':f'{0.28*(self.form_sz[0]-136)}px'}
         self.hs['AlignRecon box'] = widgets.VBox()
         self.hs['AlignRecon box'].layout = layout
+
         ## ## ## ## ## label the box
         layout = {'border':'3px solid #FFCC00', 'width':f'{self.form_sz[1] - base_wz_os - ex_ws_os}px',
                   'height':f'{0.07*(self.form_sz[0]-136)}px'}
         self.hs['AlignReconTitle box'] = widgets.HBox()
         self.hs['AlignReconTitle box'].layout = layout
         self.hs['AlignReconTitle text'] = widgets.HTML('<span style="color:red; font-size: 150%; font-weight: bold; background-color:rgb(135,206,250);">' + 'Align 3D Recon' + '</span>')
-        # self.hs['AlignReconTitle text'] = widgets.Text(value='Align 3D Recon', disabled=True)
         layout = {'background-color':'white', 'color':'cyan', 'left':'41%'}
         self.hs['AlignReconTitle text'].layout = layout
         self.hs['AlignReconTitle box'].children = [self.hs['AlignReconTitle text']]
@@ -1661,7 +1653,6 @@ class xanes3D_tools_gui():
         self.hs['VisImgTitle box'] = widgets.HBox()
         self.hs['VisImgTitle box'].layout = layout
         self.hs['VisImgTitle text'] = widgets.HTML('<span style="color:red; font-size: 150%; font-weight: bold; background-color:rgb(135,206,250);">' + 'Visualize XANES3D' + '</span>')
-        # self.hs['VisImgTitle text'] = widgets.Text(value='Visualize XANES3D', disabled=True)
         layout = {'background-color':'white', 'color':'cyan', 'left':'41%'}
         self.hs['VisImgTitle text'].layout = layout
         
@@ -1781,7 +1772,6 @@ class xanes3D_tools_gui():
         self.boxes_logic()
 
     def SelReconPath_btn_clk(self, a):
-        # restart(self, dtype='3D_XANES')
         if not self.xanes_raw_h5_path_set:
             self.hs['SelFile&PathCfm text'].value = 'You need to specify raw h5 top directory first ...'
             self.hs['SelReconPath text'].value = 'Choose recon top directory ...'
@@ -1829,28 +1819,6 @@ class xanes3D_tools_gui():
                 self.xanes_config_file_set = False
             self.xanes_file_configured = False
             self.hs['SelFile&PathCfm text'].value = 'Please comfirm your change ...'
-        # elif self.xanes_fit_option == 'Read Reg File':
-        #     if len(a.files[0]) != 0:
-        #         self.xanes_save_trial_reg_filename = os.path.abspath(a.files[0])
-        #         b = ''
-        #         t = (time.strptime(time.asctime()))
-        #         for ii in range(6):
-        #             b +=str(t[ii]).zfill(2)+'-'
-        #         self.xanes_save_trial_reg_config_filename = os.path.basename(os.path.abspath(a.files[0])).split('.')[0]+'_config_'+b.strip('-')+'.json'
-        #         self.hs['SelSavTrial btn'].initialdir = os.path.dirname(os.path.abspath(a.files[0]))
-        #         self.hs['SelSavTrial btn'].initialfile = os.path.basename(a.files[0])
-        #         self.hs['ReadAlign btn'].initialdir = os.path.dirname(os.path.abspath(a.files[0]))
-        #         update_json_content(self.global_h.GUI_cfg_file, {'cwd': os.path.dirname(os.path.abspath(a.files[0]))})
-        #         self.xanes_save_trial_set = False
-        #         self.xanes_reg_file_set = True
-        #         self.xanes_config_file_set = False
-        #     else:
-        #         self.hs['SelSavTrial text'].value='Read Existing Registration File ...'
-        #         self.xanes_save_trial_set = False
-        #         self.xanes_reg_file_set = False
-        #         self.xanes_config_file_set = False
-        #     self.xanes_file_configured = False
-        #     self.hs['SelFile&PathCfm text'].value = 'Please comfirm your change ...'
         elif self.xanes_fit_option == 'Read Config File':
             if len(a.files[0]) != 0:
                 self.xanes_save_trial_reg_config_filename_original = os.path.abspath(a.files[0])
@@ -1933,17 +1901,6 @@ class xanes3D_tools_gui():
             self.xanes_reg_file_set = False
             self.xanes_config_file_set = False
             self.hs['ReadAlign chbx'].value = False
-        # elif self.xanes_fit_option == 'Read Reg File':
-        #     self.hs['SelRawH5Path btn'].disabled = True
-        #     self.hs['SelReconPath btn'].disabled = True
-        #     self.hs['SelSavTrial btn'].option = 'askopenfilename'
-        #     self.hs['SelSavTrial btn'].description = 'Read Reg File'
-        #     self.hs['SelSavTrial btn'].open_filetypes = (('h5 files', '*.h5'),)
-        #     self.hs['SelSavTrial text'].value='Read Existing Registration File ...'
-        #     self.xanes_save_trial_set = False
-        #     self.xanes_reg_file_set = False
-        #     self.xanes_config_file_set = False
-        #     self.hs['ReadAlign btn'].text_h = self.hs['RevRegRltCfm text']
         elif self.xanes_fit_option == 'Read Config File':
             self.hs['SelRawH5Path btn'].disabled = True
             self.hs['SelReconPath btn'].disabled = True
@@ -2013,54 +1970,6 @@ class xanes3D_tools_gui():
                 else:
                     self.hs['SelFile&PathCfm text'].value = 'No valid datasets (both raw and recon data) in the directory...'
                     self.xanes_file_configured = False
-        # elif self.xanes_fit_option == 'Read Reg File':
-        #     if not self.xanes_reg_file_set:
-        #         self.hs['SelFile&PathCfm text'].value = 'Please specifiy where to read trial reg result ...'
-        #         self.xanes_file_configured = False
-        #     else:
-        #         read_config_from_reg_file(self, dtype='3D_XANES')
-        #         self.xanes_fit_option = 'Read Reg File'
-        #         self.xanes_review_aligned_img = np.ndarray(self.trial_reg[0].shape)
-        #         b = glob.glob(
-        #             os.path.join(self.xanes_raw_3D_h5_top_dir, self.xanes_raw_3D_h5_temp.split('{')[0] + '*.h5'))
-        #         ran = set([int(os.path.basename(ii).split('.')[0].split('_')[-1]) for ii in b])
-        #         b = glob.glob(
-        #             os.path.join(self.xanes_recon_3D_top_dir, self.xanes_recon_3D_dir_temp.split('{')[0] + '*'))
-        #         ren = set([int(os.path.basename(ii).split('.')[0].split('_')[-1]) for ii in b])
-        #         self.xanes_available_raw_ids = sorted(list(ran & ren))
-        #
-        #         b = glob.glob(self.xanes_recon_3D_tiff_temp.format(self.xanes_available_raw_ids[self.xanes_fixed_scan_id], '*'))
-        #         self.xanes_available_sli_file_ids = sorted([int(os.path.basename(ii).split('.')[0].split('_')[-1]) for ii in b])
-        #
-        #         self.xanes_alignment_pair_id = 0
-        #         self.hs['RegPair sldr'].max = self.xanes_alignment_pairs.shape[0]-1
-        #         self.hs['RegPair sldr'].value = 0
-        #         self.hs['RegPair sldr'].min = 0
-        #         self.hs['AlignReconOptnSli chbx'].value = False
-        #         self.hs['AlignReconOptnSliRange sldr'].max = max(self.xanes_available_sli_file_ids)
-        #         self.hs['AlignReconOptnSliRange sldr'].value = (self.xanes_roi[4],
-        #                                                                                         self.xanes_roi[5])
-        #         self.hs['AlignReconOptnSliRange sldr'].min = min(self.xanes_available_sli_file_ids)
-        #         self.hs['AlignReconOptnSliEnd text'].max = max(self.xanes_available_sli_file_ids)
-        #         self.hs['AlignReconOptnSliEnd text'].value = max(self.xanes_available_sli_file_ids)
-        #         self.hs['AlignReconOptnSliEnd text'].min = min(self.xanes_available_sli_file_ids)
-        #         self.hs['AlignReconOptnSliStart text'].max = max(self.xanes_available_sli_file_ids)
-        #         self.hs['AlignReconOptnSliStart text'].value = min(self.xanes_available_sli_file_ids)
-        #         self.hs['AlignReconOptnSliStart text'].min = min(self.xanes_available_sli_file_ids)
-        #
-        #         self.xanes_eng_list = self.reader(os.path.join(self.xanes_raw_3D_h5_top_dir, self.xanes_raw_fn_temp),
-        #                                           self.xanes_available_raw_ids[self.xanes_scan_id_s:self.xanes_scan_id_e+1],
-        #                                           dtype='eng', cfg=self.global_h.io_xanes3D_cfg)
-        #         if self.xanes_eng_list.max() < 70:
-        #             self.xanes_eng_list *= 1000
-        #
-        #         fiji_viewer_off(self.global_h, self, viewer_name='all')
-        #         self.xanes_review_shift_dict={}
-        #         self.xanes_reg_best_match_filename = os.path.splitext(self.xanes_save_trial_reg_config_filename)[0].replace('config', 'reg_best_match') + '.json'
-        #         self.xanes_recon_path_set = True
-        #         self.xanes_file_configured = True
-        #         self.xanes_reg_done = True
-        #         self.hs['SelFile&PathCfm text'].value = 'XANES3D file config is done ...'
         elif self.xanes_fit_option == 'Read Config File':
             if not self.xanes_config_file_set:
                 self.hs['SelFile&PathCfm text'].value = 'Please specifiy where to read the configuration file ...'
@@ -2221,7 +2130,6 @@ class xanes3D_tools_gui():
                 self.xanes_fit_gui_h.hs['FitEngRagOptn drpdn'].value = 'full'
         self.boxes_logic()
 
-
     def SelScanIdStart_drpdn_chg(self, a):
         self.xanes_scan_id_s = self.xanes_available_raw_ids.index(
             a['owner'].value)
@@ -2238,7 +2146,6 @@ class xanes3D_tools_gui():
         self.xanes_indices_configured = False
         self.boxes_logic()
 
-
     def SelScanIdEnd_drpdn_chg(self, a):
         self.xanes_scan_id_e = self.xanes_available_raw_ids.index(
             a['owner'].value)
@@ -2249,11 +2156,9 @@ class xanes3D_tools_gui():
         self.xanes_indices_configured = False
         self.boxes_logic()
 
-
     def FixedScanId_drpdn_chg(self, a):
         self.xanes_fixed_scan_id = self.xanes_available_raw_ids.index(
             a['owner'].value)
-        # self.xanes_fixed_scan_id = a['owner'].value
         b = glob.glob(os.path.join(self.xanes_recon_3D_dir_temp.format(a['owner'].value),
                                    self.xanes_recon_fn_temp.format(a['owner'].value, '*')))
         self.xanes_available_sli_file_ids = sorted(
@@ -2277,7 +2182,6 @@ class xanes3D_tools_gui():
         self.xanes_indices_configured = False
         self.boxes_logic()
 
-
     def FixedSliId_sldr_chg(self, a):
         if self.hs['FijiRawImgPrev chbx'].value:
             data_state, viewer_state = fiji_viewer_state(self.global_h, self, viewer_name='xanes3D_virtural_stack_preview_viewer')
@@ -2288,7 +2192,6 @@ class xanes3D_tools_gui():
             else:
                 self.hs['ConfigDataCfm text'].value = 'Please turn on fiji previewer first ...'
         self.xanes_indices_configured = False
-
 
     def FijiRawImgPrev_chbx_chg(self, a):
         if a['owner'].value:
@@ -2301,7 +2204,6 @@ class xanes3D_tools_gui():
                 self.global_h.xanes3D_fiji_windows['xanes3D_virtural_stack_preview_viewer']['fiji_id'] = None
             self.xanes_indices_configured = False
             self.boxes_logic()
-
 
     def FijiClose_btn_clk(self, a):
         if self.hs['FijiRawImgPrev chbx'].value:
@@ -2323,7 +2225,6 @@ class xanes3D_tools_gui():
         self.global_h.xanes3D_fiji_windows['analysis_viewer_z_plot_viewer']['fiji_id'] = None
         self.xanes_indices_configured = False
         self.boxes_logic()
-
 
     def ConfigDataCfm_btn_clk(self, a):
         if self.xanes_fit_option == 'Do New Reg':
@@ -2366,7 +2267,6 @@ class xanes3D_tools_gui():
                 self.xanes_eng_list *= 1000
         self.boxes_logic()
 
-
     def RoiX3D_sldr_chg(self, a):
         self.xanes_roi_configured = False
         self.boxes_logic()
@@ -2378,7 +2278,6 @@ class xanes3D_tools_gui():
                                            self.hs['3DRoiY sldr'].value[0],
                                            self.hs['3DRoiX sldr'].value[1]-self.hs['3DRoiX sldr'].value[0],
                                            self.hs['3DRoiY sldr'].value[1]-self.hs['3DRoiY sldr'].value[0])
-
 
     def RoiY3D_sldr_chg(self, a):
         self.xanes_roi_configured = False
@@ -2392,7 +2291,6 @@ class xanes3D_tools_gui():
                                            self.hs['3DRoiX sldr'].value[1]-self.hs['3DRoiX sldr'].value[0],
                                            self.hs['3DRoiY sldr'].value[1]-self.hs['3DRoiY sldr'].value[0])
 
-
     def RoiZ3D_val_sldr_chg(self, a):
         self.xanes_roi_configured = False
         if a['owner'].upper < self.xanes_fixed_sli_id:
@@ -2403,7 +2301,6 @@ class xanes3D_tools_gui():
         a['owner'].myupper = a['owner'].upper
         self.hs['3DRoiCfm text'].value = 'Please confirm after ROI is set'
 
-
     def RoiZ3D_lwr_sldr_chg(self, a):
         data_state, viewer_state = fiji_viewer_state(self.global_h, self, viewer_name='xanes3D_virtural_stack_preview_viewer')
         if (not data_state) | (not viewer_state):
@@ -2411,14 +2308,12 @@ class xanes3D_tools_gui():
         self.global_h.xanes3D_fiji_windows['xanes3D_virtural_stack_preview_viewer']['ip'].setSlice(self.hs['3DRoiZ sldr'].value[0]-self.hs['3DRoiZ sldr'].min+1)
         self.boxes_logic()
 
-
     def RoiZ3D_upr_sldr_chg(self, a):
         data_state, viewer_state = fiji_viewer_state(self.global_h, self, viewer_name='xanes3D_virtural_stack_preview_viewer')
         if (not data_state) | (not viewer_state):
             fiji_viewer_on(self.global_h, self, viewer_name='xanes3D_virtural_stack_preview_viewer')
         self.global_h.xanes3D_fiji_windows['xanes3D_virtural_stack_preview_viewer']['ip'].setSlice(self.hs['3DRoiZ sldr'].value[1]-self.hs['3DRoiZ sldr'].min+1)
         self.boxes_logic()
-
 
     def Roi3DCfm_btn_clk(self, a):
         data_state, viewer_state = fiji_viewer_state(self.global_h, self, viewer_name='xanes3D_virtural_stack_preview_viewer')
@@ -2449,7 +2344,6 @@ class xanes3D_tools_gui():
         json.dump(self.xanes_config, open(self.xanes_save_trial_reg_config_filename, 'w'), cls=NumpyArrayEncoder)
         self.boxes_logic()
 
-
     def FijiMaskViewer_chbx_chg(self, a):
         if a['owner'].value:
             fiji_viewer_on(self.global_h, self, viewer_name='xanes3D_mask_viewer')
@@ -2462,7 +2356,6 @@ class xanes3D_tools_gui():
             self.global_h.xanes3D_fiji_windows['xanes3D_mask_viewer']['fiji_id'] = None
         self.boxes_logic()
 
-
     def ChunkSz_chbx_chg(self, a):
         self.xanes_reg_params_configured = False
         if a['owner'].value:
@@ -2471,7 +2364,6 @@ class xanes3D_tools_gui():
             self.xanes_reg_use_chunk = False
         self.boxes_logic()
 
-
     def UseMask_chbx_chg(self, a):
         self.xanes_reg_params_configured = False
         if self.hs['UseMask chbx'].value:
@@ -2479,7 +2371,6 @@ class xanes3D_tools_gui():
         else:
             self.xanes_reg_use_mask = False
         self.boxes_logic()
-
 
     def MaskThres_sldr_chg(self, a):
         self.xanes_reg_params_configured = False
@@ -2501,7 +2392,6 @@ class xanes3D_tools_gui():
         self.global_h.xanes3D_fiji_windows['xanes3D_mask_viewer']['ip'].setSlice(self.xanes_fixed_sli_id-self.xanes_roi[4])
         self.global_h.ij.py.run_macro("""run("Enhance Contrast", "saturated=0.35")""")
 
-
     def MaskDilation_sldr_chg(self, a):
         self.xanes_reg_params_configured = False
         data_state, viewer_state = fiji_viewer_state(self.global_h, self, viewer_name='xanes3D_mask_viewer')
@@ -2520,7 +2410,6 @@ class xanes3D_tools_gui():
         self.global_h.xanes3D_fiji_windows['xanes3D_mask_viewer']['ip'].setSlice(self.xanes_fixed_sli_id-self.xanes_roi[4])
         self.global_h.ij.py.run_macro("""run("Enhance Contrast", "saturated=0.35")""")
 
-
     def SliSrch_sldr_chg(self, a):
         self.xanes_reg_params_configured = False
         data_state, viewer_state = fiji_viewer_state(self.global_h, self, viewer_name='xanes3D_mask_viewer')
@@ -2529,41 +2418,33 @@ class xanes3D_tools_gui():
             self.hs['FijiMaskViewer chbx'].value = True
         self.global_h.xanes3D_fiji_windows['xanes3D_mask_viewer']['ip'].setSlice(a['owner'].value)
 
-
     def ChunkSz_sldr_chg(self, a):
         self.xanes_reg_params_configured = False
         self.boxes_logic()
-
 
     def RegMethod_drpdn_chg(self, a):
         self.xanes_reg_params_configured = False
         self.boxes_logic()
 
-
     def RefMode_drpdn_chg(self, a):
         self.xanes_reg_params_configured = False
         self.boxes_logic()
-
 
     def MRTVLevel_text_chg(self, a):
         self.xanes_reg_params_configured = False
         self.boxes_logic()
 
-
     def MRTVWz_text_chg(self, a):
         self.xanes_reg_params_configured = False
         self.boxes_logic()
-
 
     def MRTVSubpixelWz_text_chg(self, a):
         self.xanes_reg_params_configured = False
         self.boxes_logic()
 
-
     def MRTVSubpixelKernel_text_chg(self, a):
         self.xanes_reg_params_configured = False
         self.boxes_logic()
-
 
     def MRTVSubpixelSrch_drpdn_chg(self, a):
         if a['owner'].value == 'analytical':
@@ -2572,7 +2453,6 @@ class xanes3D_tools_gui():
             self.hs['MRTVSubpixelWz text'].value = 5
         self.xanes_reg_params_configured = False
         self.boxes_logic()
-
 
     def ConfigRegParamsCfm_btn_clk(self, a):
         fiji_viewer_off(self.global_h, self, viewer_name='xanes3D_mask_viewer')
@@ -2598,7 +2478,6 @@ class xanes3D_tools_gui():
         self.update_xanes3D_config()
         json.dump(self.xanes_config, open(self.xanes_save_trial_reg_config_filename, 'w'), cls=NumpyArrayEncoder)
         self.boxes_logic()
-
 
     def RunRegCfm_btn_clk(self, a):
         tmp_file = os.path.join(self.global_h.tmp_dir, 'xanes3D_tmp.h5')
@@ -2665,12 +2544,10 @@ class xanes3D_tools_gui():
             self.hs['RunRegCfm text'].value = 'Something went wrong during XANES3D registration'
         self.boxes_logic()
 
-
     def ReadAlign_chbx_chg(self, a):
         self.xanes_use_existing_reg_reviewed = a['owner'].value
         self.xanes_reg_review_done = False
         self.boxes_logic()
-
 
     def ReadAlign_btn_clk(self, a):
         if (len(a.files[0])!=0):
@@ -2688,7 +2565,6 @@ class xanes3D_tools_gui():
         else:
             self.xanes_reg_file_readed = False
         self.boxes_logic()
-
 
     def RegPair_sldr_chg(self, a):
         self.xanes_alignment_pair_id = a['owner'].value
@@ -2717,7 +2593,6 @@ class xanes3D_tools_gui():
         self.xanes_review_bad_shift = False
         self.xanes_reg_review_done = False
 
-
     def RegPairBad_btn_clk(self, a):
         self.xanes_review_bad_shift = True
         self.xanes_manual_xshift = 0
@@ -2728,7 +2603,6 @@ class xanes3D_tools_gui():
         self.global_h.ij.py.run_macro("""run("Enhance Contrast", "saturated=0.35")""")
         self.xanes_reg_review_done = False
         self.boxes_logic()
-
 
     def CorrXShift_text_chg(self, a):
         self.xanes_manual_xshift = self.hs['CorrXShift text'].value
@@ -2742,7 +2616,6 @@ class xanes3D_tools_gui():
             self.global_h.ImagePlusClass))
         self.global_h.ij.py.run_macro("""run("Enhance Contrast", "saturated=0.35")""")
 
-
     def CorrYShift_text_chg(self, a):
         self.xanes_manual_xshift = self.hs['CorrXShift text'].value
         self.xanes_manual_yshift = self.hs['CorrYShift text'].value
@@ -2755,7 +2628,6 @@ class xanes3D_tools_gui():
             self.global_h.ImagePlusClass))
         self.global_h.ij.py.run_macro("""run("Enhance Contrast", "saturated=0.35")""")
 
-
     def CorrZShift_text_chg(self, a):
         self.xanes_manual_xshift = self.hs['CorrXShift text'].value
         self.xanes_manual_yshift = self.hs['CorrYShift text'].value
@@ -2767,7 +2639,6 @@ class xanes3D_tools_gui():
             self.global_h.ij.dataset().create(self.global_h.ij.py.to_java(xanes3D_review_aligned_img-self.trial_reg_fixed)),
             self.global_h.ImagePlusClass))
         self.global_h.ij.py.run_macro("""run("Enhance Contrast", "saturated=0.35")""")
-
 
     def CorrShftRecord_btn_clk(self, a):
         """
@@ -2787,7 +2658,6 @@ class xanes3D_tools_gui():
         json.dump(self.xanes_review_shift_dict, open(self.xanes_reg_best_match_filename, 'w'), cls=NumpyArrayEncoder)
         self.xanes_reg_review_done = False
         self.boxes_logic()
-
 
     def RevRegRltCfm_btn_clk(self, a):
         if len(self.xanes_review_shift_dict) != (self.hs['RegPair sldr'].max+1):
@@ -2811,7 +2681,6 @@ class xanes3D_tools_gui():
             json.dump(self.xanes_config, open(self.xanes_save_trial_reg_config_filename, 'w'), cls=NumpyArrayEncoder)
         self.boxes_logic()
 
-
     def AlignReconOptnSli_chbx_chg(self, a):
         boxes = ['align_recon_optional_slice_start_text',
                  'align_recon_optional_slice_range_slider',
@@ -2821,20 +2690,17 @@ class xanes3D_tools_gui():
         else:
             enable_disable_boxes(self.hs, boxes, disabled=True, level=-1)
 
-
     def AlignReconOptnSliStart_text_chg(self, a):
         if a['owner'].value <= self.hs['AlignReconOptnSliRange sldr'].upper:
             self.hs['AlignReconOptnSliRange sldr'].lower = a['owner'].value
         else:
             a['owner'].value = self.hs['AlignReconOptnSliRange sldr'].upper
 
-
     def AlignReconOptnSliEnd_text_chg(self, a):
         if a['owner'].value >= self.hs['AlignReconOptnSliRange sldr'].lower:
             self.hs['AlignReconOptnSliRange sldr'].upper = a['owner'].value
         else:
             a['owner'].value = self.hs['AlignReconOptnSliRange sldr'].lower
-
 
     def AlignReconOptnSliRange_sldr_chg(self, a):
         self.hs['AlignReconOptnSliStart text'].value = a['owner'].lower
@@ -2846,7 +2712,6 @@ class xanes3D_tools_gui():
         self.global_h.xanes3D_fiji_windows['xanes3D_virtural_stack_preview_viewer']['ip'].setRoi(int(self.xanes_roi[2]), int(self.xanes_roi[0]),
                                                                                 int(self.xanes_roi[3]-self.xanes_roi[2]),
                                                                                 int(self.xanes_roi[1]-self.xanes_roi[0]))
-
 
     def AlignReconCfm_btn_clk(self, a):
         if self.hs['AlignReconOptnSli chbx'].value:
@@ -2905,7 +2770,6 @@ class xanes3D_tools_gui():
             self.hs['AlignReconCfm text'].value = 'something wrong in XANES3D alignment ...'
         self.boxes_logic()
 
-
     def VisImgViewerOptn_tgbtn_clk(self, a):
         self.xanes_visualization_viewer_option = a['owner'].value
         if self.xanes_visualization_viewer_option == 'napari':
@@ -2914,7 +2778,6 @@ class xanes3D_tools_gui():
                 self.xanes_aligned_data = f['/registration_results/reg_results/registered_xanes3D'][:]
             self.viewer = napari.view_image(self.xanes_aligned_data)
         self.boxes_logic()
-
 
     def VisImgViewAlignOptn_drpdn_clk(self, a):
         """
@@ -2969,11 +2832,9 @@ class xanes3D_tools_gui():
         self.xanes_fit_view_option_previous = self.xanes_fit_view_option
         self.boxes_logic()
 
-
     def VisImgViewAlignSli_sldr_chg(self, a):
         fiji_viewer_on(self.global_h, self, viewer_name='xanes3D_analysis_viewer')
         self.hs['VisImgViewAlignEng text'].value = round(self.xanes_fit_eng_list[a['owner'].value-1], 1)
-
 
     def VisImgViewAlign4thDim_sldr_chg(self, a):
         self.xanes_fit_4th_dim_idx = a['owner'].value
@@ -3001,11 +2862,9 @@ class xanes3D_tools_gui():
         self.global_h.ij.py.run_macro("""run("Collect Garbage")""")
         self.global_h.ij.py.run_macro("""run("Enhance Contrast", "saturated=0.35")""")
 
-
     def VisSpecViewMemMnt_chbx_chg(self, a):
         if a['owner'].value:
             self.global_h.ij.py.run_macro("""run("Monitor Memory...")""")
-
 
     def VisSpecViewInRoi_btn_clk(self, a):
         data_state, viewer_state = fiji_viewer_state(self.global_h, self, viewer_name='xanes3D_analysis_viewer')

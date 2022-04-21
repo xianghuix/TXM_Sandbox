@@ -295,7 +295,6 @@ class tomo_recon_gui():
                   "height": f"{0.07 * (self.form_sz[0] - 136)}px"}
         self.hs["SelFile&PathTitle box"] = widgets.HBox()
         self.hs["SelFile&PathTitle box"].layout = layout
-        # self.hs["SelFile&PathTitle label"] = widgets.Text(value="Config Dirs & Files", disabled=True)
         self.hs["SelFile&PathTitle label"] = widgets.HTML(
             "<span style='color:red; font-size: 150%; font-weight: bold; background-color:rgb(135,206,250);'>" + "Config Dirs & Files" + "</span>")
         layout = {"background-color": "white", "color": "cyan", "left": "39%"}
@@ -596,12 +595,10 @@ class tomo_recon_gui():
         self.hs["ZingerLevel text"] = widgets.BoundedFloatText(value=500.0, description='Zinger Lev',
                                                                min=10, max=1000, disabled=True)
         self.hs["ZingerLevel text"].layout = layout
-        # layout = {"left": "10%", "width": "19%"}
         layout = {"left": "10%", "width": "10%"}
         self.hs["UseMask chbx"] = widgets.Checkbox(value=True, description="Use Mask",
                                                    disabled=True, indent=False)
         self.hs["UseMask chbx"].layout = layout
-        # layout = {"left": "19%", "width": "19%"}
         layout = {"left": "10%", "width": "17%"}
         self.hs["MaskRat text"] = widgets.BoundedFloatText(value=1, description='Mask R',
                                                            min=0, max=1, step=0.05, disabled=True)
@@ -706,10 +703,6 @@ class tomo_recon_gui():
                   "height": f"{0.21 * (self.form_sz[0] - 136)}px"}
         self.hs["AlgConfig box"] = widgets.VBox()
         self.hs["AlgConfig box"].layout = layout
-
-        # ## ## ## ## ## ## ## label alg_config_box -- start
-        #
-        # ## ## ## ## ## ## ## label alg_config_box -- end
 
         layout = {"border": "3px solid #FFCC00", "height": f"{0.07 * (self.form_sz[0] - 136)}px"}
         self.hs["AlgOptn box0"] = widgets.HBox()
@@ -997,6 +990,7 @@ class tomo_recon_gui():
                                                   "height": f"{0.57 * (self.form_sz[0] - 136)}px",
                                                   "align_items": "flex-start",
                                                   "justify_items": "flex-start"})
+
         ## ## ## ## ## ## ## config filters: left-hand side box in GridspecLayout -- start
         FilterConfigGrid[0, :100] = GridspecLayout(10, 20,
                                                    grid_gap="8px",
@@ -1473,12 +1467,10 @@ class tomo_recon_gui():
         self.tomo_data_center_path = recon_param_dict["file_params"]["data_center_dir"]
         self.tomo_recon_top_dir = recon_param_dict["file_params"]["recon_top_dir"]
         self.tomo_debug_top_dir = recon_param_dict["file_params"]["debug_top_dir"]
-        # self.tomo_cen_list_file = recon_param_dict["file_params"]["cen_list_file"]
         self.tomo_alt_flat_file = recon_param_dict["file_params"]["alt_flat_file"]
         self.tomo_alt_dark_file = recon_param_dict["file_params"]["alt_dark_file"]
         self.tomo_wedge_ang_auto_det_ref_fn = recon_param_dict["file_params"]["wedge_ang_auto_det_ref_fn"]
         self.global_h.io_tomo_cfg = recon_param_dict['file_params']['io_confg']
-        # self.tomo_recon_type = recon_param_dict["recon_config"]["recon_type"]
         self.tomo_use_debug = recon_param_dict["recon_config"]["use_debug"]
 
         self.tomo_use_alt_flat = recon_param_dict["recon_config"]["use_alt_flat"]
@@ -1533,8 +1525,6 @@ class tomo_recon_gui():
         self.tomo_recon_param_dict["file_params"]["alt_dark_file"] = self.tomo_alt_dark_file
         self.tomo_recon_param_dict["file_params"]["wedge_ang_auto_det_ref_fn"] = self.tomo_wedge_ang_auto_det_ref_fn
         self.tomo_recon_param_dict['file_params']['io_confg'] = self.global_h.io_tomo_cfg
-        # self.tomo_recon_param_dict['file_params']['reader'] = self.reader
-        # self.tomo_recon_param_dict['file_params']['info_reader'] = self.info_reader
         self.tomo_recon_param_dict['file_params']['use_struc_h5_reader'] = self.global_h.io_tomo_cfg['use_h5_reader']
         self.tomo_recon_param_dict["recon_config"]["recon_type"] = self.tomo_recon_type
         self.tomo_recon_param_dict["recon_config"]["use_debug"] = self.tomo_use_debug
@@ -1584,7 +1574,6 @@ class tomo_recon_gui():
         self.hs["UseMask chbx"].value = self.tomo_use_mask
         self.hs["AutoDet chbx"].value = self.tomo_use_wedge_ang_auto_det
         self.hs["IsWedge chbx"].value = self.tomo_is_wedge
-        # self.hs["UseConfig chbx"].value = self.tomo_use_read_config
 
         a = []
         for ii in sorted(self.tomo_right_filter_dict.keys()):
@@ -2343,7 +2332,6 @@ class tomo_recon_gui():
                                                            ds_use=self.tomo_use_downsample, ds_level=self.tomo_ds_ratio,
                                                            mean_axis=2)
             print(self.wedge_eva_data.shape, flat.shape, dark.shape)
-            # self.wedge_eva_data[:] = normalize(self.wedge_eva_data, flat, dark)[:]
             self.hs["AutoRefSli sldr"].value = 0
             self.hs["AutoRefSli sldr"].max = self.wedge_eva_data.shape[1] - 1
         else:

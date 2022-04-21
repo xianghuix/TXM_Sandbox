@@ -354,115 +354,6 @@ def find_raw_val(spec, val=0.5):
     return spec[np.argmin(np.abs(spec-val), axis=0)]
 
 
-# @msgit(wd=100, fill='-')
-# def find_deriv_peak_poly(p, x):
-#     """
-#     inputs:
-#         :param p: array-like; spec array
-#         :param x: array-like; energy point list around the peak
-#     returns:
-#         ndarray: pixel-wise peak position map
-#     """
-#     x_grad = np.gradient(x, axis=0)
-#     bdi = _chunking(p.shape[1])
-#     with mp.Pool(N_CPU) as pool:
-#         rlt = pool.map(partial(_max_poly_grad, x, x_grad), [
-#                        p[:, bdi[ii]:bdi[ii+1]] for ii in range(N_CPU)])
-#     pool.close()
-#     pool.join()
-#     return np.vstack(list(chain(*rlt))).astype(np.float32)
-#
-#
-# def _max_poly_grad(x0, xg, coef):
-#     rlt0 = []
-#     for ii in range(coef.shape[1]):
-#         c = np.polyval(coef[:, ii], x0)
-#         rlt0.append([x0[np.argmax(np.gradient(c, axis=0)/xg, axis=0)]])
-#     return rlt0
-
-
-# @msgit(wd=100, fill='-')
-# def find_fit_val_poly(p, x, v=0.5):
-#     """
-#     Find the indices to 'x' where the N polynomials have values closest to the
-#     target value 'v'
-#
-#     Parameters
-#     ----------
-#     p : MxN array; polynomial coefficients; M: polynomial order + 1, N: number
-#         of fitting points.
-#     x : locations where polynomial values are calculated.
-#     v : float, optional
-#         target value. The default is 0.5.
-#
-#     Returns
-#     -------
-#     array of size N
-#         the indices to 'x' where the N polynomials have values closest to the
-#         target value 'v'.
-#
-#     """
-#     bdi = _chunking(p.shape[1])
-#     with mp.Pool(N_CPU) as pool:
-#         rlt = pool.map(partial(_find_poly_v, x, v), [
-#                        p[:, bdi[ii]:bdi[ii+1]] for ii in range(N_CPU)])
-#     pool.close()
-#     pool.join()
-#     return np.vstack(list(chain(*rlt))).astype(np.float32)
-#
-#
-# def _find_poly_v(x0, v0, coef):
-#     rlt0 = []
-#     for ii in range(coef.shape[1]):
-#         cur = np.polyval(coef[:, ii], x0)
-#         rlt0.append(x0[np.argmin(np.abs(cur-v0), axis=0)])
-#     return rlt0
-
-
-# @msgit(wd=100, fill='-')
-# def find_fit_peak_poly(p, x):
-#     """
-#     :param p: array-like; spec array
-#     :param x: array-like; energy point list around the peak
-#     :return:
-#     """
-#     bdi = _chunking(p.shape[1])
-#     with mp.Pool(N_CPU) as pool:
-#         rlt = pool.map(partial(_find_poly_peak, x), [
-#                        p[:, bdi[ii]:bdi[ii+1]] for ii in range(N_CPU)])
-#     pool.close()
-#     pool.join()
-#     return np.vstack(list(chain(*rlt))).astype(np.float32)
-#
-#
-# def _find_poly_peak(x0, coef):
-#     rlt0 = []
-#     for ii in range(coef.shape[1]):
-#         c = np.polyval(coef[:, ii], x0)
-#         rlt0.append(x0[np.argmax(c)])
-#     return rlt0
-
-
-# @msgit(wd=100, fill='-')
-# def find_deriv_peak_scipy(model, p, x):
-#     """
-#     inputs:
-#         model: string; line shape function name in 'functions'
-#         p: array-like; spec array
-#         x: array-like; energy point list around the peak
-#     returns:
-#         ndarray: pixel-wise peak position map
-#     """
-#     func = functions[model]
-#     bdi = _chunking(p.shape[1])
-#     with mp.Pool(N_CPU) as pool:
-#         rlt = pool.map(partial(_max_fun_grad, func, x), [
-#                        p[:, bdi[ii]:bdi[ii+1]] for ii in range(N_CPU)])
-#     pool.close()
-#     pool.join()
-#     return np.vstack(list(chain(*rlt))).astype(np.float32)
-
-
 @msgit(wd=100, fill='-')
 def find_deriv_peak(model, p, x):
     """
@@ -483,15 +374,6 @@ def find_deriv_peak(model, p, x):
     return np.vstack(list(chain(*rlt))).astype(np.float32)
 
 
-# def _max_fun_grad(f, x0, fvars):
-#     rlt0 = []
-#     x_grad = np.gradient(x0)
-#
-#     for ii in range(fvars.shape[1]):
-#         rlt0.append(x0[np.argmax(np.gradient(f(x0, *fvars[:, ii]))/x_grad)])
-#     return rlt0
-
-
 def _max_fun_grad(f, x0, fvars):
     rlt0 = []
     x_grad = np.gradient(x0)
@@ -510,26 +392,6 @@ def _max_fun_grad(f, x0, fvars):
                 idmu_max, dmu_max = i, dmu[i]
         rlt0.append(x0[idmu_max])
     return rlt0
-
-
-# @msgit(wd=100, fill='-')
-# def find_fit_val_scipy(model, p, x, v=0.5):
-#     """
-#     inputs:
-#         model: string; line shape function name in 'functions'
-#         p: array-like; spec array
-#         x: array-like; energy point list around the peak
-#     returns:
-#         ndarray: pixel-wise peak position map
-#     """
-#     func = functions[model]
-#     bdi = _chunking(p.shape[1])
-#     with mp.Pool(N_CPU) as pool:
-#         rlt = pool.map(partial(_find_fun_v, func, x, v), [
-#                        p[:, bdi[ii]:bdi[ii+1]] for ii in range(N_CPU)])
-#     pool.close()
-#     pool.join()
-#     return np.vstack(list(chain(*rlt))).astype(np.float32)
 
 
 @msgit(wd=100, fill='-')
@@ -557,26 +419,6 @@ def _find_fun_v(f, x0, v0, fvars):
     for ii in range(fvars.shape[1]):
         rlt0.append(x0[np.argmin(np.abs(f(x0, *fvars[:, ii])-v0))])
     return rlt0
-
-
-# @msgit(wd=100, fill='-')
-# def find_fit_peak_scipy(model, p, x):
-#     """
-#     inputs:
-#         model: string; line shape function name in 'functions'
-#         p: array-like; spec array
-#         x: array-like; energy point list around the peak
-#     returns:
-#         ndarray: pixel-wise peak position map
-#     """
-#     func = functions[model]
-#     bdi = _chunking(p.shape[1])
-#     with mp.Pool(N_CPU) as pool:
-#         rlt = pool.map(partial(_find_fun_peak, func, x), [
-#                        p[:, bdi[ii]:bdi[ii+1]] for ii in range(N_CPU)])
-#     pool.close()
-#     pool.join()
-#     return np.vstack(list(chain(*rlt))).astype(np.float32)
 
 
 @msgit(wd=100, fill='-')
@@ -623,10 +465,6 @@ def find_50_peak(model_e, x_e, p_e, model_p, x_p, p_p, ftype='both'):
         func_e = functions[model_e]
         func_p = functions[model_p]
         bdi = _chunking(len(p_e[0]))
-        # print(f'{x_e.shape=}, {x_p.shape=}')
-        # print(f'{p_e.shape=}, {p_p.shape=}')
-        # print(f'{p_e[:, 0]=}')
-        # print(f'{model_e=}, {model_p=}')
         with mp.Pool(N_CPU) as pool:
             rlt = pool.map(partial(_find_50_peak_fit_both, func_e, x_e, func_p, x_p), [
                            [p_e[:, bdi[ii]:bdi[ii+1]], p_p[:, bdi[ii]:bdi[ii+1]]] for ii in range(N_CPU)])
@@ -634,9 +472,6 @@ def find_50_peak(model_e, x_e, p_e, model_p, x_p, p_p, ftype='both'):
         pool.join()
         return np.vstack(list(chain(*rlt))).astype(np.float32)
     elif ftype == 'wl':
-        # x_e: coordinate where (model_e, p_e) to be interpolated
-        # model_e: independent variable (energy points in a measured spectrum)
-        # p_e: dependent variable (chi at each energy point in a measured spectrum)
         func_p = functions[model_p]
         bdi = _chunking(len(p_e[0]))
         with mp.Pool(N_CPU) as pool:
@@ -646,9 +481,6 @@ def find_50_peak(model_e, x_e, p_e, model_p, x_p, p_p, ftype='both'):
         pool.join()
         return np.vstack(list(chain(*rlt))).astype(np.float32)
     elif ftype == 'edge':
-        # x_p: coordinate where (model_e, p_e) to be interpolated
-        # model_p: independent variable (energy points in a measured spectrum)
-        # p_p: dependent variable (chi at each energy point in a measured spectrum)
         func_e = functions[model_e]
         bdi = _chunking(len(p_e[0]))
         with mp.Pool(N_CPU) as pool:
@@ -658,12 +490,6 @@ def find_50_peak(model_e, x_e, p_e, model_p, x_p, p_p, ftype='both'):
         pool.join()
         return np.vstack(list(chain(*rlt))).astype(np.float32)
     elif ftype == 'none':
-        # model_e: coordinate where (model_e, p_e) to be interpolated
-        # x_e: independent variable (energy points in a measured spectrum)
-        # p_e: dependent variable (chi at each energy point in a measured spectrum)
-        # model_p: coordinate where (model_e, p_e) to be interpolated
-        # x_p: independent variable (energy points in a measured spectrum)
-        # p_p: dependent variable (chi at each energy point in a measured spectrum)
         bdi = _chunking(len(p_e[0]))
         with mp.Pool(N_CPU) as pool:
             rlt = pool.map(partial(_find_50_peak_fit_none, model_e, x_e, model_p, x_p), [
@@ -676,14 +502,12 @@ def find_50_peak(model_e, x_e, p_e, model_p, x_p, p_p, ftype='both'):
 def _find_50_peak_fit_both(f0, x0, f1, x1, fvars):
     rlt0 = []
     for ii in range(fvars[0].shape[1]):
-        # print(f'{fvars[0][:, ii]=}, {x0.shape=}, {fvars[1][:, ii]=}, {x1.shape=}')
         rlt0.append(x0[np.argmin(np.abs(f0(x0, *fvars[0][:, ii]) - 0.5*np.max(f1(x1, *fvars[1][:, ii]))))])
     return rlt0
 
 
 def _find_50_peak_fit_wl(x, x0, f1, x1, fvars):
     rlt0 = []
-    # print(f"{x.shape=}, {x0.shape=}, {fvars[0].shape=}, {x1.shape=}, {fvars[1].shape=}")
     for ii in range(fvars[0].shape[1]):
         rlt0.append(x[np.argmin(np.abs(np.interp(x, x0, fvars[0][:, ii]) - 0.5*np.max(f1(x1, *fvars[1][:, ii]))))])
     return rlt0
@@ -714,7 +538,6 @@ def lcf(ref, spec, constr=True, tol=1e-7):
     :return:
     """
     dim = spec.reshape([spec.shape[0], -1]).shape[1]
-    # print(ref.shape, spec.shape, dim)
     if constr:
         bnds = Bounds(np.zeros(ref.shape[1]), np.ones(ref.shape[1]))
         eq_constr = [LinearConstraint(np.ones([1, ref.shape[1]]), [1], [1])]

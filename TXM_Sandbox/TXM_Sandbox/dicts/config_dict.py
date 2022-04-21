@@ -26,6 +26,7 @@ IO_TOMO_CFG_DEFAULT = {'structured_h5_reader':{
                        'tomo_raw_fn_template':'fly_scan_id_{}.h5'
                       }
 
+
 IO_XANES2D_CFG_DEFAULT = {'structured_h5_reader':{
                           'io_data_structure':{'data_path':'/img_xanes',
                                                'flat_path':'/img_bkg',
@@ -45,6 +46,7 @@ IO_XANES2D_CFG_DEFAULT = {'structured_h5_reader':{
                                               },
                           'xanes2D_raw_fn_template':'xanes_scan2_id_{}.h5'
                          }
+
 
 IO_XANES3D_CFG_DEFAULT = {'structured_h5_reader':{
                           'io_data_structure':{'data_path':'/img_tomo',

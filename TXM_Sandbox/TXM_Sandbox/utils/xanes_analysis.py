@@ -155,7 +155,6 @@ class xanes_analysis():
         if not isinstance(eng, np.ndarray):
             eng = np.array(eng)
         fit = xm.eval_polynd(fit_coef, eng)
-        # print(f"{fit.shape=}", f"{eng.shape=}", f"{self.spec.shape=}")
         if reshape:
             if eng.shape:
                 return fit.reshape([eng.shape[0], *self.spec.shape[1:]])
@@ -228,8 +227,6 @@ class xanes_analysis():
         for ii in range(0, len(eng_e.shape)):
             eng = eng[:, np.newaxis]
 
-        # print(f"{self.wl_pos_fit.shape=}", f"{self.wl_pos_dir.shape=}")
-        # print(f"{eng_e.shape=}", f"{eng.shape=}")
         a = (eng >= eng_s) & (eng <= eng_e + 0.0002)
         b = (np.where(a, self.spec, 0) * eng * (np.roll(eng, -1, axis=0) - eng)).sum(axis=0)
         c = (np.where(a, self.spec, 0) * (np.roll(eng, -1, axis=0) - eng)).sum(axis=0)
@@ -339,15 +336,12 @@ class xanes_analysis():
                                             self.spec[idx_s:idx_e].reshape(idx_e - idx_s, -1).max(axis=0)) \
                     .reshape(self.spec.shape[1:])
             else:
-                # print(f"{es=}", f"{idx_s=}", f"{idx_e=}", f"{ee=}", f"{self.eng[idx_s:idx_e].shape=}", f"{self.norm_spec[idx_s:idx_e].shape=}")
                 self.wl_pos_dir = xm.lookup(self.eng[idx_s:idx_e],
                                             self.norm_spec[idx_s:idx_e].reshape(idx_e - idx_s, -1),
                                             self.norm_spec[idx_s:idx_e].reshape(idx_e - idx_s, -1).max(axis=0)) \
                     .reshape(self.spec.shape[1:])
-                # print(f"{self.wl_pos_dir.shape=}")
 
     @msgit(wd=100, fill='$')
-    # def cal_edge_deriv(self, es, ee, optimizer='numpy', ufac=20):
     def find_edge_deriv(self, es, ee, optimizer='model', ufac=20):
         idx_s = xm.index_of(self.eng, es)
         idx_e = xm.index_of(self.eng, ee)
@@ -416,7 +410,6 @@ class xanes_analysis():
             rlt = pool.starmap(_finde0, [(eng, spec[:, ii]) for ii in np.int32(np.arange(spec.shape[1]))])
         pool.close()
         pool.join()
-        # print('e0.shape:', np.array(rlt).reshape(dim[1:]).shape)
         self.edge_pos_dir = np.array(rlt).reshape(dim[1:])
 
     def find_edge_t(self):
@@ -440,30 +433,6 @@ class xanes_analysis():
             1. Supports :ref:`First Argument Group` convention, requiring group members `energy` and `mu`
             2. Supports :ref:`Set XAFS Group` convention within Larch or if `_larch` is set.
         """
-        # def _finde0(mu, energy=None):
-        #     if len(energy.shape) > 1:
-        #         energy = energy.squeeze()
-        #     if len(mu.shape) > 1:
-        #         mu = mu.squeeze()
-        #
-        #     dmu = np.gradient(mu)/np.gradient(energy)
-        #     # find points of high derivative
-        #     dmu[np.where(~np.isfinite(dmu))] = -1.0
-        #     nmin = max(3, int(len(dmu)*0.05))
-        #     maxdmu = max(dmu[nmin:-nmin])
-        #
-        #     high_deriv_pts = np.where(dmu >  maxdmu*0.1)[0]
-        #     idmu_max, dmu_max = 0, 0
-        #
-        #     for i in high_deriv_pts:
-        #         if i < nmin or i > len(energy) - nmin:
-        #             continue
-        #         if (dmu[i] > dmu_max and
-        #             (i+1 in high_deriv_pts) and
-        #             (i-1 in high_deriv_pts)):
-        #             idmu_max, dmu_max = i, dmu[i]
-        #
-        #     return energy[idmu_max]
         ids = xm.index_of(self.eng, self.pre_ee)
         ide = xm.index_of(self.eng, self.post_es)
         eng = self.eng[ids:ide]
@@ -476,7 +445,6 @@ class xanes_analysis():
         return: ndarray, pre_edge_fit has dimension of [2].append(list(spectrum.shape[1:]))
         """
         try:
-            # print(f"pre_es_idx: {self.pre_es_idx}, pre_ee_idx: {self.pre_ee_idx}")
             kernel = 5 * np.ones([len(self.spec.shape)])
             kernel[0] = 1
             self.pre_edge_fit_rlt = xm.fit_curv_polynd(self.eng[self.pre_es_idx:self.pre_ee_idx],
@@ -493,7 +461,6 @@ class xanes_analysis():
         return: ndarray, post_edge_fit has dimension of [2].append(list(spectrum.shape[1:]))
         """
         try:
-            # print(f"post_es_idx: {self.post_es_idx}, post_ee_idx: {self.post_ee_idx}")
             kernel = 5*np.ones([len(self.spec.shape)])
             kernel[0] = 1
             self.post_edge_fit_rlt = xm.fit_curv_polynd(self.eng[self.post_es_idx:self.post_ee_idx],
@@ -620,14 +587,6 @@ class xanes_analysis():
         self.model[ftype]['eoff'] = eoff
         self.model[ftype]['fit_rlt'] = self.fit_spec(es, ee, eoff, optimizer, flt_spec, on,
                                                      *args, **kwargs)
-        # if ftype == 'edge':
-        #     self.edge_fit_err = self.model[ftype]['fit_rlt'][1].reshape(*self.spec.shape[1:])
-        #     self.edge_fit_coef = self.model[ftype]['fit_rlt'][0].reshape(self.model[ftype]['fit_rlt'][0].shape[0],
-        #                                                                  *self.spec.shape[1:])
-        # elif ftype == 'wl':
-        #     self.wl_fit_err = self.model[ftype]['fit_rlt'][1].reshape(*self.spec.shape[1:])
-        #     self.wl_fit_coef = self.model[ftype]['fit_rlt'][0].reshape(self.model[ftype]['fit_rlt'][0].shape[0],
-        #                                                                *self.spec.shape[1:])
 
     @msgit(wd=100, fill='$')
     def full_spec_preprocess(self, eng0, order=1, save_pre_post=False):
@@ -644,30 +603,6 @@ class xanes_analysis():
         self.norm_spec[np.isnan(self.norm_spec)] = 0
         self.norm_spec[np.isinf(self.norm_spec)] = 0
 
-        # if order == 0:
-        #     self.norm_spec = (self.spec - self.pre_edge_mean_map) / \
-        #                      (self.post_edge_mean_map - self.pre_edge_mean_map)
-        #     self.norm_spec[np.isnan(self.norm_spec)] = 0
-        #     self.norm_spec[np.isinf(self.norm_spec)] = 0
-        #     self.spec_normalized = True
-        # elif order == 1:
-        #     if save_pre_post:
-        #         self.pre_edge_fit = pre
-        #         self.post_edge_fit = post
-        #         # self.norm_spec = (self.spec - pre[e0_idx]) / (post[e0_idx] - pre[e0_idx])
-        #         self.norm_spec = (self.spec - pre) / (post - pre)
-        #         self.norm_spec[np.isnan(self.norm_spec)] = 0
-        #         self.norm_spec[np.isinf(self.norm_spec)] = 0
-        #     else:
-        #         # self.norm_spec = (self.spec - pre[e0_idx]) / (post[e0_idx] - pre[e0_idx])
-        #         self.norm_spec = (self.spec - pre) / (post - pre)
-        #         self.norm_spec[np.isnan(self.norm_spec)] = 0
-        #         self.norm_spec[np.isinf(self.norm_spec)] = 0
-        #     self.spec_normalized = True
-        # else:
-        #     print('Order can only be "1" or "0".')
-        #     self.spec_normalized = False
-
     def interp_ref_spec(self):
         self.lcf_ref_spec = np.ndarray([self.eng.shape[0], self.lcf_ref.index.size])
         for ii in range(self.lcf_ref.index.size):
@@ -679,7 +614,6 @@ class xanes_analysis():
         self.lcf_model['constr'] = self.lcf_constr_use
         self.lcf_model['ref'] = self.lcf_ref
         self.lcf_model['rlt'] = xm.lcf(self.lcf_ref_spec, self.norm_spec, constr=self.lcf_constr_use)
-        # print(self.lcf_model['rlt'][0].shape, self.lcf_ref_spec.shape, self.spec.shape)
         self.lcf_fit = self.lcf_model['rlt'][0].reshape(self.lcf_model['rlt'][0].shape[0], *self.spec.shape[1:])
         self.lcf_fit_err = self.lcf_model['rlt'][1].reshape(*self.spec.shape[1:])
 

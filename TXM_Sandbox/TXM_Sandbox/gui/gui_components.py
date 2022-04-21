@@ -52,7 +52,7 @@ class NumpyArrayEncoder(JSONEncoder):
             return obj.tolist()
         else:
             return JSONEncoder.default(self, obj)
-            # return super(NumpyArrayEncoder, self).default(obj)
+
 
 class SelectFilesButton(widgets.Button):
     """A file widget that leverages tkinter.filedialog."""
@@ -103,7 +103,6 @@ class SelectFilesButton(widgets.Button):
             gui_h.open_filetypes = kwargs['open_filetypes']
         else:
             gui_h.open_filetypes = (('json files', '*.json'), ('text files', '*.txt'))
-        # gui_h.save_filetypes = (('hdf5 files', '*.h5'))
         # Set on click behavior.
         gui_h.on_click(gui_h.select_files)
 
@@ -528,7 +527,6 @@ def fiji_viewer_on(global_h, gui_h, viewer_name='xanes2D_raw_img_viewer'):
         if data_state:
             if not viewer_state:
                 global_h.ijui.show(global_h.ij.py.to_java(gui_h.edge_jump_mask))
-                # global_h.ij.py.run_macro("""run("Enhance Contrast", "saturated=0.35")""")
                 global_h.ij.py.run_macro("""setMinAndMax(0, 1)""")
                 global_h.xanes3D_fiji_windows[viewer_name]['ip'] = global_h.WindowManager.getCurrentImage()
                 global_h.xanes3D_fiji_windows[viewer_name]['fiji_id'] = global_h.WindowManager.getIDList()[-1]
@@ -539,7 +537,6 @@ def fiji_viewer_on(global_h, gui_h, viewer_name='xanes2D_raw_img_viewer'):
         if data_state:
             if not viewer_state:
                 global_h.ijui.show(global_h.ij.py.to_java(gui_h.fitted_edge_mask))
-                # global_h.ij.py.run_macro("""run("Enhance Contrast", "saturated=0.35")""")
                 global_h.ij.py.run_macro("""setMinAndMax(0, 1)""")
                 global_h.xanes3D_fiji_windows[viewer_name]['ip'] = global_h.WindowManager.getCurrentImage()
                 global_h.xanes3D_fiji_windows[viewer_name]['fiji_id'] = global_h.WindowManager.getIDList()[-1]
@@ -602,7 +599,6 @@ def fiji_viewer_on(global_h, gui_h, viewer_name='xanes2D_raw_img_viewer'):
         if data_state:
             if not viewer_state:
                 global_h.ijui.show(global_h.ij.py.to_java(gui_h.edge_jump_mask))
-                # global_h.ij.py.run_macro("""run("Enhance Contrast", "saturated=0.35")""")
                 global_h.ij.py.run_macro("""setMinAndMax(0, 1)""")
                 global_h.xanes2D_fiji_windows[viewer_name]['ip'] = global_h.WindowManager.getCurrentImage()
                 global_h.xanes2D_fiji_windows[viewer_name]['fiji_id'] = global_h.WindowManager.getIDList()[-1]
@@ -613,7 +609,6 @@ def fiji_viewer_on(global_h, gui_h, viewer_name='xanes2D_raw_img_viewer'):
         if data_state:
             if not viewer_state:
                 global_h.ijui.show(global_h.ij.py.to_java(gui_h.fitted_edge_mask))
-                # global_h.ij.py.run_macro("""run("Enhance Contrast", "saturated=0.35")""")
                 global_h.ij.py.run_macro("""setMinAndMax(0, 1)""")
                 global_h.xanes2D_fiji_windows[viewer_name]['ip'] = global_h.WindowManager.getCurrentImage()
                 global_h.xanes2D_fiji_windows[viewer_name]['fiji_id'] = global_h.WindowManager.getIDList()[-1]
@@ -737,7 +732,6 @@ def fiji_viewer_state(global_h, gui_h, viewer_name='xanes3D_virtural_stack_previ
         if (gui_h.xanes_aligned_data is None):
             data_state = False
         else:
-            # f = h5py.File(gui_h.xanes_save_trial_reg_filename, 'r')
             with h5py.File(gui_h.xanes_save_trial_reg_filename, 'r') as f:
                 data_shape = f['/registration_results/reg_results/registered_xanes3D'].shape
                 if gui_h.hs['VisImgViewAlignOptn drpdn'].value == 'x-y-E':
@@ -762,7 +756,6 @@ def fiji_viewer_state(global_h, gui_h, viewer_name='xanes3D_virtural_stack_previ
                         data_state = True
                 else:
                     data_state = True
-            # f.close()
         if global_h.WindowManager.getIDList() is None:
             viewer_state = False
         elif not global_h.xanes3D_fiji_windows[viewer_name]['fiji_id'] in global_h.WindowManager.getIDList():
@@ -956,27 +949,6 @@ def get_handles(hs, key):
     return get_keys(next(get_vals(hs, key)))
 
 
-# def get_decendant(box, level=-1):
-#     if level < 0:
-#         level = 1000000
-#     tem = []
-#     cnt = [0]
-#     def _get_decendant(box, level):
-#         if hasattr(box, 'children'):
-#             for ii in box.children:
-#                 if hasattr(ii, 'children'):
-#                     # if (not ii.children) and (cnt[0]<level):
-#                     if cnt[0] < level:
-#                         _get_decendant(ii, level-cnt[0])
-#                 else:
-#                     tem.append(ii)
-#                 cnt[0] += 1
-#         else:
-#             tem.append(box)
-#         return tem
-#     return _get_decendant(box, level=level)
-
-
 def get_decendant(box, level=-1):
     if level < 0:
         level = 1000000
@@ -1006,18 +978,10 @@ def get_raw_img_info(fn, cfg, scan_type='tomo'):
                 data_info['theta_max'] = np.max(ang[idx])
                 data_info['img_dim'] = list(f[cfg['structured_h5_reader']['io_data_info']['item00_path']].shape)
                 data_info['img_dim'][0] = data_info['theta_len']
-                # data_info['theta_len'] = f[cfg['structured_h5_reader']['io_data_info']['item01_path']].shape[0]
-                # data_info['theta_min'] = np.min(f[cfg['structured_h5_reader']['io_data_info']['item01_path']])
-                # data_info['theta_max'] = np.max(f[cfg['structured_h5_reader']['io_data_info']['item01_path']])
-                # data_info['img_dim'] = f[cfg['structured_h5_reader']['io_data_info']['item00_path']].shape
                 for ii in range(2, 7):
                     key = cfg['structured_h5_reader']['io_data_info'][f'item{str(ii).zfill(2)}_path']
                     if key in f:
                         data_info[os.path.basename(key)] = f[key][()]
-                # data_info['pixel size'] = f[cfg['structured_h5_reader']['io_data_info']['item03_path']][()]
-                # data_info['eng'] = f[cfg['structured_h5_reader']['io_data_info']['item04_path']][()]
-                # data_info['note'] = f[cfg['structured_h5_reader']['io_data_info']['item05_path']][()]
-                # data_info['scan time'] = datetime.fromtimestamp(f[cfg['structured_h5_reader']['io_data_info']['item06_path']][()]).strftime("%m/%d/%Y, %H:%M:%S")
             elif scan_type == 'xanes2D':
                 data_info['img_dim'] = f[cfg['structured_h5_reader']['io_data_info']['item00_path']].shape
                 data_info['eng_len'] = f[cfg['structured_h5_reader']['io_data_info']['item01_path']].shape[0]
@@ -1040,11 +1004,6 @@ def get_raw_img_info(fn, cfg, scan_type='tomo'):
                     key = cfg['structured_h5_reader']['io_data_info'][f'item{str(ii).zfill(2)}_path']
                     if key in f:
                         data_info[os.path.basename(key)] = f[key][()]
-                # data_info['magnification'] = f[cfg['structured_h5_reader']['io_data_info']['item02_path']][()]
-                # data_info['pixel size'] = f[cfg['structured_h5_reader']['io_data_info']['item03_path']][()]
-                # data_info['eng'] = f[cfg['structured_h5_reader']['io_data_info']['item04_path']][()]
-                # data_info['note'] = f[cfg['structured_h5_reader']['io_data_info']['item05_path']][()]
-                # data_info['scan time'] = datetime.fromtimestamp(f[cfg['structured_h5_reader']['io_data_info']['item06_path']][()]).strftime("%m/%d/%Y, %H:%M:%S")
     except Exception as err:
         print(str(err))
         data_info = {}
@@ -1076,7 +1035,6 @@ def read_config_from_reg_file(gui_h, dtype='2D_XANES'):
     if dtype == '2D_XANES':
         pass
     elif dtype == '3D_XANES':
-        # f = h5py.File(gui_h.xanes_save_trial_reg_filename, 'r')
         with h5py.File(gui_h.xanes_save_trial_reg_filename, 'r') as f:
             gui_h.xanes_recon_3D_tiff_temp = f['/trial_registration/data_directory_info/recon_path_template'][()]
             gui_h.xanes_raw_3D_h5_top_dir = f['/trial_registration/data_directory_info/raw_h5_top_dir'][()]
@@ -1098,9 +1056,6 @@ def read_config_from_reg_file(gui_h, dtype='2D_XANES'):
             gui_h.trial_reg = f['/trial_registration/trial_reg_results/{0}/trial_reg_img{0}'.format('000')][:]
             gui_h.trial_reg_fixed = f['/trial_registration/trial_reg_results/{0}/trial_fixed_img{0}'.format('000')][:]
             gui_h.xanes_review_aligned_img = np.ndarray(gui_h.trial_reg[0].shape)
-        # f.close()
-    else:
-        pass
 
 
 def restart(gui_h, dtype='2D_XANES'):
@@ -1370,7 +1325,6 @@ def restart(gui_h, dtype='2D_XANES'):
 
         gui_h.tomo_raw_data_top_dir = None
         gui_h.tomo_raw_data_file_template = None
-        # gui_h.tomo_data_center_path = None
         gui_h.tomo_recon_top_dir = None
         gui_h.tomo_debug_top_dir = None
         gui_h.tomo_cen_list_file = None
@@ -1381,7 +1335,6 @@ def restart(gui_h, dtype='2D_XANES'):
         gui_h.tomo_recon_type = "Trial Cent"
         gui_h.tomo_use_debug = False
         gui_h.tomo_use_alt_flat = False
-
 
         gui_h.hs["AltFlatFile btn"].style.button_color = "orange"
         gui_h.hs["AltFlatFile btn"].description = "Alt Flat File"
@@ -1420,7 +1373,6 @@ def restart(gui_h, dtype='2D_XANES'):
         gui_h.tomo_wedge_missing_s = 500
         gui_h.tomo_wedge_missing_e = 600
         gui_h.tomo_wedge_ang_auto_det_thres = 500
-
         gui_h.alg_param_dict = {}
     elif dtype == 'XANES_FITTING':
         gui_h.fit_wl_fit_use_param_bnd = False
@@ -1535,10 +1487,6 @@ def save_io_config(gui_h):
 
 
 
-    # def L0_3_0_1_0_5_io_spec_xanes3D_reader_btn_click(self, a):
-    #     if len(a.files[0]) != 0:
-    #         gui_h.hs['IOSpecXANES3DRdr text'].value = a.files[0]
-
     with open(gui_h.global_h.io_data_struc_tomo_cfg_file, 'w') as f:
         json.dump(io_data_structure_tomo, f)
     with open(gui_h.global_h.io_data_struc_xanes2D_cfg_file, 'w') as f:
@@ -1622,5 +1570,3 @@ def update_json_content(fn, new_item):
         tmp[ii] = new_item[ii]
     with open(fn, 'w') as f:
         json.dump(tmp, f)
-        # if ii in list(tmp.keys()):
-        #     tmp[ii] = new_item[ii]

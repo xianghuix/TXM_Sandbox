@@ -14,8 +14,6 @@ from scipy.ndimage import zoom, gaussian_filter as gf, median_filter as median
 import skimage.restoration as skr
 from skimage.transform import rescale
 import tomopy
-# from ..utils.io import (data_reader, tomo_h5_reader,
-#                         data_info, tomo_h5_info)
 from .io import (data_reader, tomo_h5_reader,
                  data_info, tomo_h5_info)
 
@@ -74,7 +72,7 @@ FILTERLIST = ["phase retrieval",
               "denoise: denoise_wavelet"]
 
 
-def alignt_proj(data, data_ref=None, **kwargs):
+def align_proj(data, data_ref=None, **kwargs):
     pass
 
 
@@ -212,7 +210,6 @@ def normalize(arr, flat, dark, fake_flat_roi=None, cutoff=None, ncore=None, out=
     if fake_flat_roi is None:
         flat = np.mean(flat, axis=0, dtype=np.float32)
     dark = np.mean(dark, axis=0, dtype=np.float32)
-    # print(arr.shape, flat.shape, dark.shape)
     with tomopy.util.mproc.set_numexpr_threads(ncore):
         denom = (flat - dark).astype(np.float32)
         out = (arr - dark).astype(np.float32)
@@ -344,7 +341,6 @@ def read_data(reader, fn, cfg, sli_start=0, sli_end=20,
         else:
             data = reader(fn, dtype='data', sli=[None, [sli_start, sli_end], [col_start, col_end]], cfg=cfg).astype(
                 np.float32)[idx]
-            # print(data.shape)
             if use_fake_flat:
                 white = fake_flat_val * np.ones([data.shape[1], data.shape[2]], dtype=np.float32)
             else:
@@ -398,7 +394,6 @@ def run_engine(**kwargs):
     file_debug_top_dir = kwargs['file_params']['debug_top_dir']
     file_alt_flat_fn = kwargs['file_params']['alt_flat_file']
     file_alt_dark_fn = kwargs['file_params']['alt_dark_file']
-    # file_cen_list_fn = kwargs['file_params']['cen_list_file']
     file_wedge_ang_auto_det_ref_fn = kwargs['file_params']['wedge_ang_auto_det_ref_fn']
     file_cfg = kwargs['file_params']['io_confg']
     reader = kwargs['file_params']['reader']
@@ -422,13 +417,11 @@ def run_engine(**kwargs):
     data_flat_blur_kernel = kwargs["data_params"]["blur_kernel"]
     data_zinger_val = kwargs["data_params"]['zinger_val']
     data_mask_ratio = kwargs["data_params"]['mask_ratio']
-    # data_wedge_blankat = kwargs["data_params"]['wedge_blankat']
     data_wedge_missing_s = kwargs["data_params"]['wedge_missing_s']
     data_wedge_missing_e = kwargs["data_params"]['wedge_missing_e']
     data_wedge_col_s = kwargs["data_params"]["wedge_col_s"]
     data_wedge_col_e = kwargs["data_params"]["wedge_col_e"]
     data_wedge_ang_auto_det_thres = kwargs["data_params"]['wedge_ang_auto_det_thres']
-    # print('1:', data_col_s, data_col_e)
 
     rec_type = kwargs['recon_config']['recon_type']
     if data_ds_level == 1:
@@ -447,7 +440,6 @@ def run_engine(**kwargs):
     is_wedge = kwargs['recon_config']['is_wedge']
 
     flt_param_dict = kwargs["flt_params"]
-
     alg_param_dict = kwargs["alg_params"]
 
     if not rec_use_alt_flat:
@@ -522,11 +514,6 @@ def run_engine(**kwargs):
 
         overwrite_dir(file_data_cen_dir)
 
-        # tomopy.write_center(data[:,int(dim[1]/2)-1:int(dim[1]/2)+1,:],
-        #                     theta, dpath=file_data_cen_dir,
-        #                     cen_range=(data_cen_win_s, data_cen_win_s+data_cen_win_w, 0.5),
-        #                     mask=rec_use_mask, ratio=data_mask_ratio,
-        #                     algorithm='gridrec', filter_name='parzen')
         write_center(data[:, int(dim[1] / 2) - 1:int(dim[1] / 2) + 1, :],
                      theta, dpath=file_data_cen_dir,
                      cen_range=(data_cen_win_s, data_cen_win_s + data_cen_win_w, 0.5),
@@ -546,16 +533,6 @@ def run_engine(**kwargs):
         state = 1
         if is_wedge:
             if rec_use_wedge_ang_auto_det:
-                # bad_angs = get_dim_ang_range_range_sli(dim_info,
-                # reader,
-                # file_wedge_ang_auto_det_ref_fn,
-                # file_cfg,
-                # data_sli_s,
-                # sli_end=data_sli_e,
-                # # col_start=data_wedge_col_s, col_end=data_wedge_col_e,
-                # # ds_use=rec_use_ds, ds_level=data_ds_level,
-                # # thres=data_wedge_ang_auto_det_thres)
-                # print('wedge_ref_file: ', file_wedge_ang_auto_det_ref_fn)
                 bad_angs = get_dim_ang_range_range_sli(dim_info, reader, file_wedge_ang_auto_det_ref_fn,
                                                        file_cfg, sli_start=0,
                                                        sli_end=None, col_start=data_wedge_col_s,
@@ -566,8 +543,6 @@ def run_engine(**kwargs):
                 bad_angs = np.zeros([data.shape[0], data.shape[1]])
                 bad_angs[data_wedge_missing_s:data_wedge_missing_e, :] = 1
 
-        # file_raw_fn, file_recon_template = get_file(file_raw_data_top_dir, data_scan_id,
-        #                                             file_cfg, recon_top_dir=file_recon_top_dir)
         file_raw_fn, file_recon_template = get_file(file_raw_data_top_dir, data_scan_id, file_cfg,
                                                     recon_top_dir=file_recon_top_dir)
         print(file_raw_fn, file_recon_template)
@@ -642,11 +617,6 @@ def run_engine(**kwargs):
                     if rec_use_mask:
                         data_recon = tomopy.circ_mask(data_recon, 0, ratio=data_mask_ratio)
 
-                    # dxchange.writer.write_tiff_stack(data_recon[int(data_margin):(sli_end - sli_start - int(data_margin)),:,:],
-                    #                                  axis=0, fname=file_recon_template,
-                    #                                  start=sli_start + int(data_margin),
-                    #                                  overwrite=True)
-
                     write_tiff_stack(data_recon[int(data_margin):(sli_end - sli_start - int(data_margin)), :, :],
                                      axis=0, fnt=file_recon_template,
                                      start=sli_start + int(data_margin),
@@ -704,11 +674,6 @@ def run_filter(data, flt):
                                                   is_real=params['is_real'], clip=params['clip'])[:]
     elif flt_name == "denoise: denoise_nl_means":
         for ii in range(data.shape[0]):
-            # data[ii] = skr.denoise_nl_means(data[ii], patch_size=params['patch_size'],
-            #                                 patch_distance=params['patch_distance'],
-            #                                 h=params['h'], multichannel=params['multichannel'],
-            #                                 fast_mode=params['fast_mode'], sigma=params['sigma'],
-            #                                 preserve_range=None)[:]
             data[ii] = skr.denoise_nl_means(data[ii], **params, preserve_range=None)[:]
     elif flt_name == "denoise: denoise_tv_bregman":
         for ii in range(data.shape[0]):
@@ -723,23 +688,12 @@ def run_filter(data, flt):
                                                 multichannel=params['multichannel'])[:]
     elif flt_name == "denoise: denoise_bilateral":
         for ii in range(data.shape[0]):
-            # data[ii] = skr.denoise_bilateral(data[ii], win_size=params['win_size'],
-            #                                  sigma_color=params['sigma_color'], sigma_spatial=params['sigma_spatial'],
-            #                                  bins=params['bins'], mode=params['mode'],
-            #                                  cval=params['cval'], multichannel=params['multichannel'])[:]
             data[ii] = skr.denoise_bilateral(data[ii], **params)[:]
     elif flt_name == "denoise: denoise_wavelet":
         for ii in range(data.shape[0]):
-            # data[ii] = skr.denoise_wavelet(data[ii], sigma=params['sigma'],
-            #                                wavelet=params['wavelet'], mode=params['mode'],
-            #                                wavelet_levels=params['wavelet_levels'], multichannel=params['multichannel'],
-            #                                convert2ycbcr=params['convert2ycbcr'], method=params['method'],
-            #                                rescale_sigma=params['rescale_sigma'])[:]
             data[ii] = skr.denoise_wavelet(data[ii], **params)[:]
     elif flt_name == "flatting bkg":
         data[:] = tomopy.prep.normalize.normalize_bg(data, air=params['air'])[:]
-    # elif flt_name == "remove cupping":
-    #     data -= params['cc']
     elif flt_name == "stripe_removal: vo":
         for key in params.keys():
             if key in ["la_size", "sm_size"]:
@@ -755,7 +709,6 @@ def run_filter(data, flt):
         data[:] = tomopy.prep.stripe.remove_stripe_fw(data, **params)[:]
     elif flt_name == "phase retrieval":
         data[:] = retrieve_phase(data, **params)[:]
-        # data[:] = tomopy.prep.phase.retrieve_phase(data, **params)[:]
     return data
 
 
@@ -904,8 +857,6 @@ def write_center(tomo, theta, dpath='tmp/center', cen_range=None, ind=None,
             specifying a custom angle-dependent filter in Fourier domain. The first element
             of each filter should be the zero-frequency component.
     """
-    # for key,val in kwargs.items():
-    #     print(f"{key=}", "\t", f"{val=}")
     tomo = tomopy.util.dtype.as_float32(tomo)
     theta = tomopy.util.dtype.as_float32(theta)
 

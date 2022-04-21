@@ -565,7 +565,6 @@ class xanes2D_tools_gui():
             "xanes2D_regparams_chunk_sz_slider.min"]
         self.hs['ChunkSz sldr'].value = self.xanes_config["registration_config"][
             "xanes2D_regparams_chunk_sz_slider.val"]
-        # self.hs['RegMethod drpdn'].options = self.xanes_config["registration_config"]["xanes2D_regparams_reg_method_dropdown_options"]
         self.hs['RegMethod drpdn'].value = self.xanes_config["registration_config"][
             "xanes2D_regparams_reg_method"]
         self.hs['RefMode drpdn'].options = self.xanes_config["registration_config"][
@@ -1012,7 +1011,6 @@ class xanes2D_tools_gui():
                   'height': f'{0.07 * (self.form_sz[0] - 136)}px'}
         self.hs['SelFile&PathTitle box'] = widgets.HBox()
         self.hs['SelFile&PathTitle box'].layout = layout
-        # self.hs['SelFile&PathTitle label'] = widgets.Text(value='Config Files', disabled=True)
         self.hs['SelFile&PathTitle label'] = widgets.HTML(
             '<span style="color:red; font-size: 150%; font-weight: bold; background-color:rgb(135,206,250);">' + 'Config Dirs & Files' + '</span>')
         layout = {'background-color': 'white', 'color': 'cyan', 'left': '39%'}
@@ -1097,7 +1095,7 @@ class xanes2D_tools_gui():
                                                 self.hs['SelRaw box'],
                                                 self.hs['SelSaveTrial box'],
                                                 self.hs['SelFile&PathComfirm box']]
-        ## ## ## ## bin widgets in hs['SelFile&Path box'] -- configure file settings -- end
+        ## ## ## ## boundle widgets in hs['SelFile&Path box'] -- configure file settings -- end
 
         ## ## ## ## define functional widgets in each box in each sub-tab  - define data -- start
         layout = {'border': '3px solid #8855AA', 'width': f'{self.form_sz[1] - base_wz_os - ex_ws_os}px',
@@ -1141,8 +1139,6 @@ class xanes2D_tools_gui():
         self.hs['DataPrepOptions box'].children = [self.hs['IsRaw chbx'],
                                                    self.hs['NormScale text'],
                                                    self.hs['ConfigDataLoadImg btn']]
-
-        # self.hs['DataPrepOptions box'].children = [self.hs['DataPrepOptions box1']]
         ## ## ## ## ## data_preprocessing_options -- end
 
         ## ## ## ## ## define eng points -- start
@@ -1221,7 +1217,7 @@ class xanes2D_tools_gui():
                                               self.hs['EngRange box'],
                                               self.hs['Fiji box'],
                                               self.hs['ConfigDataCfm box']]
-        ## ## ## ## bin widgets in hs['ConfigData box']  - config data -- end
+        ## ## ## ## boundle widgets in hs['ConfigData box']  - config data -- end
 
         ## ## ## ## data metadata display -- start
         layout = {'border': '3px solid #8855AA', 'width': f'{self.form_sz[1] - base_wz_os - ex_ws_os}px',
@@ -1274,8 +1270,6 @@ class xanes2D_tools_gui():
                   'height': f'{0.14 * (self.form_sz[0] - 136)}px'}
         self.hs['2DRoiDefine box'] = widgets.VBox()
         self.hs['2DRoiDefine box'].layout = layout
-        # layout = {'border': '3px solid #FFCC00', 'width': f'{self.form_sz[1] - base_wz_os - 2*ex_ws_os}px',
-        #           'height': f'{0.07 * (self.form_sz[0] - 136)}px'}
         self.hs['2DRoiX sldr'] = widgets.IntRangeSlider(value=[10, 40], min=1,
                                                         max=50, step=1,
                                                         description='x range:',
@@ -1543,6 +1537,7 @@ class xanes2D_tools_gui():
                   'height': f'{0.21 * (self.form_sz[0] - 136)}px'}
         self.hs['RunReg box'] = widgets.VBox()
         self.hs['RunReg box'].layout = layout
+
         ## ## ## ## ## label run_reg box -- start
         layout = {'border': '3px solid #FFCC00', 'width': f'{self.form_sz[1] - base_wz_os - ex_ws_os}px',
                   'height': f'{0.07 * (self.form_sz[0] - 136)}px'}
@@ -1575,6 +1570,7 @@ class xanes2D_tools_gui():
         self.hs['RunReg btn'].on_click(self.RunReg_btn_clk)
         self.hs['RunRegCfm box'].children = [self.hs['RunReg text'],
                                              self.hs['RunReg btn']]
+
         ## ## ## ## ## run reg progress
         layout = {'border': '3px solid #FFCC00', 'width': f'{self.form_sz[1] - base_wz_os - ex_ws_os}px',
                   'height': f'{0.07 * (self.form_sz[0] - 136)}px'}
@@ -1605,6 +1601,7 @@ class xanes2D_tools_gui():
                   'height': f'{0.35 * (self.form_sz[0] - 136)}px'}
         self.hs['RevRegRlt box'] = widgets.VBox()
         self.hs['RevRegRlt box'].layout = layout
+
         ## ## ## ## ## label review_reg_results box -- start
         layout = {'border': '3px solid #FFCC00', 'width': f'{self.form_sz[1] - base_wz_os - ex_ws_os}px',
                   'height': f'{0.07 * (self.form_sz[0] - 136)}px'}
@@ -1721,6 +1718,7 @@ class xanes2D_tools_gui():
                   'height': f'{0.21 * (self.form_sz[0] - 136)}px'}
         self.hs['AlignImg box'] = widgets.VBox()
         self.hs['AlignImg box'].layout = layout
+
         ## ## ## ## ## label align_recon box -- start
         layout = {'border': '3px solid #FFCC00', 'width': f'{self.form_sz[1] - base_wz_os - ex_ws_os}px',
                   'height': f'{0.07 * (self.form_sz[0] - 136)}px'}
@@ -1780,6 +1778,7 @@ class xanes2D_tools_gui():
                   'height': f'{0.14 * (self.form_sz[0] - 136)}px'}
         self.hs['VisImg box'] = widgets.VBox()
         self.hs['VisImg box'].layout = layout
+
         ## ## ## ## ## define visualization title -- start
         layout = {'border': '3px solid #FFCC00', 'width': f'{self.form_sz[1] - base_wz_os - ex_ws_os}px',
                   'height': f'{0.07 * (self.form_sz[0] - 136)}px'}
@@ -1878,8 +1877,6 @@ class xanes2D_tools_gui():
             self.xanes_file_configured = False
             self.hs['CfmFile&Path text'].value = 'Please comfirm your change ...'
         elif self.xanes_file_analysis_option == 'Read Config File':
-            # restart(self, dtype='2D_XANES')
-            # restart(self.xanes_fit_gui_h, dtype='XANES_FITTING')
             if len(a.files[0]) != 0:
                 self.xanes_file_save_trial_reg_config_filename_original = a.files[0]
                 b = ''
@@ -1905,8 +1902,6 @@ class xanes2D_tools_gui():
             self.xanes_file_configured = False
             self.hs['CfmFile&Path text'].value = 'Please comfirm your change ...'
         elif self.xanes_file_analysis_option == 'Reg By Shift':
-            # restart(self, dtype='2D_XANES')
-            # restart(self.xanes_fit_gui_h, dtype='XANES_FITTING')
             if len(a.files[0]) != 0:
                 self.xanes_file_save_trial_reg_config_filename_original = a.files[0]
                 b = ''
@@ -1932,8 +1927,6 @@ class xanes2D_tools_gui():
             self.xanes_file_configured = False
             self.hs['CfmFile&Path text'].value = 'Please comfirm your change ...'
         elif self.xanes_file_analysis_option == 'Do Analysis':
-            # restart(self, dtype='2D_XANES')
-            # restart(self.xanes_fit_gui_h, dtype='XANES_FITTING')
             self.hs['SelSaveTrial btn'].style.button_color = "lightgreen"
             if len(a.files[0]) != 0:
                 self.xanes_save_trial_reg_filename = os.path.abspath(a.files[0])
@@ -2315,8 +2308,6 @@ class xanes2D_tools_gui():
                 self.xanes_fit_post_edge_s = tem[4]
                 self.xanes_fit_edge_0p5_fit_s = tem[5]
                 self.xanes_fit_edge_0p5_fit_e = tem[6]
-                # self.set_xanes2D_handles()
-                # self.set_xanes2D_variables()
                 self.xanes_fit_gui_h.hs['FitEngRagOptn drpdn'].value = 'wl'
                 self.xanes_fit_gui_h.hs['FitEngRagOptn drpdn'].value = 'full'
                 if ((self.xanes_fit_eng_list.min() > (self.xanes_fit_edge_eng - 50)) and
@@ -2329,7 +2320,6 @@ class xanes2D_tools_gui():
                     self.xanes_fit_gui_h.hs['FitEngRagOptn drpdn'].disabled = False
                     self.xanes_fit_type = 'full'
         self.boxes_logic()
-
 
     def IsRaw_chbx_change(self, a):
         self.xanes_config_is_raw = a['owner'].value

@@ -67,8 +67,6 @@ class xanes_analysis_gui():
         
     def build_gui(self):
         self.hs['Ana form'] = widgets.Tab()
-        # layout = {'border':'3px solid #FFCC00', 'width':f'{0.96*self.form_sz[1]-98}px', 'height':f'{0.92*(self.form_sz[0]-128)}px'}
-        # self.hs['Ana form'].layout = layout
         self.hs['AnaData tab'] = widgets.VBox()
         self.hs['AnaPrep tab'] = widgets.VBox()
         self.hs['AnaConfig tab'] = widgets.VBox()
@@ -263,12 +261,8 @@ class xanes_analysis_gui():
                         self.ana_proc_data_list.append(key)
                     self.hs['AnaDataSetupItem list'].options = \
                         self.ana_proc_data_list
-                    # self.hs['AnaDataSetupItem list'].value = \
-                    #     self.ana_proc_data_list[0]
                 else:
                     self.ana_proc_data_list = [""]
-                    # self.hs['AnaDataSetupItem list'].value = \
-                    #     self.ana_proc_data_list[0]            
         else:
             self.ana_fn_seled = False
             self.ana_proc_data_list = [""]
