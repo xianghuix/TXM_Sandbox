@@ -1,0 +1,36 @@
+### package installation instruction 
+1. Install Fiji and run "Update ImageJ" and "Update Fiji" from its Help menu after installation
+
+2. Unzip TXM_Sandbox and put it into a dedicated directory, e.g. ~/software. Keep TXM_Sandbox directory structure unchanged.
+
+3. Install dependent Python packages with conda. You will need to have Anaconda installed first. Use below command to install dependent packages
+
+>> conda create -n pytxm38 python=3.8 openjdk=8 pyimagej scyjava imglyb maven jpype1 jgo  nodejs xarray tomopy h5py tifffile imutils opencv openpyxl pytables pandas jupyter jupyterlab multiprocess scikit-image scikit-learn pystackreg silx napari spyder -c conda-forge
+
+4. Add TXM_Sandbox installation path into PYTHONPATH. For instance, if TXM_Sandbox is in the path /home/user/software, you need to add this path into PYTHONPATH. The command to edit PYTHONPATH depends on the specific shell you are using. You can check the type of current shell with command
+
+>> echo $SHELL 
+
+In csh or tcsh, you can add following lines in your ~/.cshrc or ~/.tcshrc file 
+
+if ( ! $?PYTHONPATH ) then
+     setenv PYTHONPATH "/home/user/software/"
+else
+     setenv PYTHONPATH "/home/user/software/:$PYTHONPATH"
+endif
+
+You will need to run follow command to enforce the change after edits
+
+>> source ~/.csh (or ~/.tcshrc)
+
+5. Change to a working directory. Suggest not use TXM_Sandbox as your working directory. It would be better to make a dedicated directory and copy TXM_GUI2.ipynb file in TXM_Sandbox folder into your working directory. TXM_Sandbox will generate some runable Python files in your working directory.
+
+6. Under your working directory, type following command to launch Jupyter 
+
+>> jupyter lab &
+or 
+>> jupyter notebook &
+
+Change the Fiji path in the first cell and run it with ctrl + enter. This will simultaneously launch Fiji and TXM_Sandbox
+
+

@@ -1,0 +1,6 @@
+# ignore these files
+**/__pycache__
+*.pyc
+analysis_tool_gui_cfg.json
+*.h5
+*.log
