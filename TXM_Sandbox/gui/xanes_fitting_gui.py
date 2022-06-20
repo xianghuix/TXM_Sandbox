@@ -634,9 +634,7 @@ class xanes_fitting_gui():
                 cfg = json.load(f)
                 self.hs['FitItemConfigLCFSelRef btn'].initialdir = cfg['xanes_ref_d']
         except:
-            with open(self.global_h.GUI_cfg_file, 'r') as f:
-                cfg = json.load(f)
-                self.hs['FitItemConfigLCFSelRef btn'].initialdir = os.path.abspath(os.path.curdir)
+            self.hs['FitItemConfigLCFSelRef btn'].initialdir = os.path.abspath(os.path.curdir)
 
         fit_pars_GridspecLayout[5:8, 50:150] = \
             widgets.SelectMultiple(options=[], value=[],
