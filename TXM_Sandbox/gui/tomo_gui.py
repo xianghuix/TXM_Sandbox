@@ -261,7 +261,7 @@ class tomo_recon_gui():
         self.tomo_wedge_auto_ref_col_s = 0
         self.tomo_wedge_auto_ref_col_e = 10
         self.tomo_wedge_ang_auto_det_thres = 0.1
-        self.data_info = {"img_dim": [0, 0, 0]}
+        self.data_info = {}
 
         self.alg_param_dict = OrderedDict({})
 
@@ -1333,7 +1333,7 @@ class tomo_recon_gui():
             self.lock_message_text_boxes()
 
     def cal_set_srch_win(self):
-        if self.data_info is None:
+        if not self.data_info:
             self.data_info = get_raw_img_info(self.tomo_raw_data_file_template.format(self.tomo_scan_id),
                                               self.global_h.io_tomo_cfg, scan_type='tomo')
             info = ""
