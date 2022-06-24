@@ -1566,14 +1566,14 @@ class tomo_recon_gui():
 
     def set_widgets_from_rec_params(self, recon_param_dict):
         self.hs["UseAltFlat chbx"].value = self.tomo_use_alt_flat
-        if self.tomo_use_alt_flat & self.tomo_alt_flat_file:
+        if self.tomo_use_alt_flat & (self.tomo_alt_flat_file is not None):
             self.hs["AltFlatFile btn"].files = [self.tomo_alt_flat_file]
             self.hs["AltFlatFile btn"].style.button_color = "lightgreen"
         else:
             self.hs["AltFlatFile btn"].files = None
             self.hs["AltFlatFile btn"].style.button_color = "orange"
         self.hs["UseAltDark chbx"].value = self.tomo_use_alt_dark
-        if self.tomo_use_alt_dark & self.tomo_alt_dark_file:
+        if self.tomo_use_alt_dark & (self.tomo_alt_dark_file is not None):
             self.hs["AltDarkFile btn"].files = [self.tomo_alt_dark_file]
             self.hs["AltDarkFile btn"].style.button_color = "lightgreen"
         else:
@@ -1614,7 +1614,7 @@ class tomo_recon_gui():
         self.hs["ZingerLevel text"].value = self.tomo_zinger_val
         if (self.tomo_use_wedge_ang_auto_det &
                 self.tomo_is_wedge &
-                self.tomo_wedge_ang_auto_det_ref_fn):
+                (self.tomo_wedge_ang_auto_det_ref_fn is not None)):
             self.hs["AutoRefFn btn"].files = [self.tomo_wedge_ang_auto_det_ref_fn]
             self.hs["AutoRefFn btn"].style.button_color = "lightgreen"
         else:
