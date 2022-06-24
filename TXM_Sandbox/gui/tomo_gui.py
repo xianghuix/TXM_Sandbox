@@ -1566,7 +1566,19 @@ class tomo_recon_gui():
 
     def set_widgets_from_rec_params(self, recon_param_dict):
         self.hs["UseAltFlat chbx"].value = self.tomo_use_alt_flat
+        if self.tomo_use_alt_flat & self.tomo_alt_flat_file:
+            self.hs["AltFlatFile btn"].files = [self.tomo_alt_flat_file]
+            self.hs["AltFlatFile btn"].style.button_color = "lightgreen"
+        else:
+            self.hs["AltFlatFile btn"].files = None
+            self.hs["AltFlatFile btn"].style.button_color = "orange"
         self.hs["UseAltDark chbx"].value = self.tomo_use_alt_dark
+        if self.tomo_use_alt_dark & self.tomo_alt_dark_file:
+            self.hs["AltDarkFile btn"].files = [self.tomo_alt_dark_file]
+            self.hs["AltDarkFile btn"].style.button_color = "lightgreen"
+        else:
+            self.hs["AltDarkFile btn"].files = None
+            self.hs["AltDarkFile btn"].style.button_color = "orange"
         self.hs["UseFakeFlat chbx"].value = self.tomo_use_fake_flat
         self.hs["UseFakeDark chbx"].value = self.tomo_use_fake_dark
         self.hs["UseBlurFlat chbx"].value = self.tomo_use_blur_flat 
@@ -1600,6 +1612,14 @@ class tomo_recon_gui():
         self.hs["ReconMargSz text"].value = self.tomo_margin
         self.hs["BlurKern text"].value = self.tomo_flat_blur_kernel
         self.hs["ZingerLevel text"].value = self.tomo_zinger_val
+        if (self.tomo_use_wedge_ang_auto_det &
+                self.tomo_is_wedge &
+                self.tomo_wedge_ang_auto_det_ref_fn):
+            self.hs["AutoRefFn btn"].files = [self.tomo_wedge_ang_auto_det_ref_fn]
+            self.hs["AutoRefFn btn"].style.button_color = "lightgreen"
+        else:
+            self.hs["AutoRefFn btn"].files = None
+            self.hs["AutoRefFn btn"].style.button_color = "orange"
         self.hs["MaskRat text"].value = self.tomo_mask_ratio
         self.hs["MissIdxStart text"].value = self.tomo_wedge_missing_s
         self.hs["MissIdxEnd text"].value = self.tomo_wedge_missing_e
