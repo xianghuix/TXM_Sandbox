@@ -1359,9 +1359,7 @@ class tomo_recon_gui():
                 for key, item in data_info.items():
                     info = info + str(key) + ':' + str(item) + '\n'
                 self.hs["DataInfo text"].value = info
-                if (list(self.data_info["img_dim"][1:]) == list(data_info["img_dim"][1:])):
-                    self.data_info = data_info
-                else:
+                if ((not self.data_info) or (list(self.data_info["img_dim"][1:]) != list(data_info["img_dim"][1:]))):
                     self.data_info = data_info
                     if self.hs["CenWinLeft text"].value >= (
                             self.data_info["img_dim"][2] - self.hs["CenWinWz text"].value - 1):
@@ -1372,6 +1370,8 @@ class tomo_recon_gui():
                         self.hs["CenWinLeft text"].max = self.data_info["img_dim"][2] - self.hs[
                             "CenWinWz text"].value - 1
                     self.hs["CenWinLeft text"].value = int(self.data_info["img_dim"][2] / 2) - 40
+                else:
+                    self.data_info = data_info
             else:
                 self.hs["SelFile&PathCfm text"].value = "Cannot open the file..."
 
@@ -1565,7 +1565,7 @@ class tomo_recon_gui():
                                                     'params': self.alg_param_dict}
 
     def set_widgets_from_rec_params(self, recon_param_dict):
-        self.hs["UseFakeFlat chbx"].value = self.tomo_use_alt_flat
+        self.hs["UseAltFlat chbx"].value = self.tomo_use_alt_flat
         self.hs["UseAltDark chbx"].value = self.tomo_use_alt_dark
         self.hs["UseFakeFlat chbx"].value = self.tomo_use_fake_flat
         self.hs["UseFakeDark chbx"].value = self.tomo_use_fake_dark
@@ -2085,7 +2085,7 @@ class tomo_recon_gui():
 
     def UseAltDark_chbx_chg(self, a):
         self.tomo_use_alt_dark = a["owner"].value
-        if self.hs["UseAltDark chbx"].value:
+        if self.tomo_use_alt_dark:
             self.hs["UseFakeDark chbx"].value = False
         self.tomo_data_configured = False
         self.recon_finish = -1
@@ -2104,7 +2104,7 @@ class tomo_recon_gui():
 
     def UseFakeFlat_chbx_chg(self, a):
         self.tomo_use_fake_flat = a["owner"].value
-        if self.hs["UseFakeFlat chbx"].value:
+        if self.tomo_use_fake_flat:
             self.hs["UseAltFlat chbx"].value = False
         self.tomo_data_configured = False
         self.recon_finish = -1
@@ -2120,7 +2120,7 @@ class tomo_recon_gui():
 
     def UseFakeDark_chbx_chg(self, a):
         self.tomo_use_fake_dark = a["owner"].value
-        if self.hs["UseFakeDark chbx"].value:
+        if self.tomo_use_fake_dark:
             self.hs["UseAltDark chbx"].value = False
         self.tomo_data_configured = False
         self.recon_finish = -1
