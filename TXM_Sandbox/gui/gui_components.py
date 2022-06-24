@@ -1564,8 +1564,11 @@ def set_io_config(gui_h, cfg_dict, cfg_type='tomo'):
 
 
 def update_json_content(fn, new_item):
-    with open(fn, 'r') as f:
-        tmp = json.load(f)
+    if os.path.exists(fn):
+        with open(fn, 'r') as f:
+            tmp = json.load(f)
+    else:
+        tmp = {}
     for ii in new_item.keys():
         tmp[ii] = new_item[ii]
     with open(fn, 'w') as f:

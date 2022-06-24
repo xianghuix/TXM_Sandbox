@@ -24,7 +24,7 @@ from ..utils.tomo_recon_tools import (FILTERLIST, TOMO_RECON_PARAM_DICT,
 from ..utils.io import (data_reader, tomo_h5_reader,
                         data_info, tomo_h5_info)
 
-FILTER_PARAM_DICT = OrderedDict(
+FILTER_PARAM_DICT = dict(OrderedDict(
     {"phase retrieval": {0: ["filter", ["paganin", "bronnikov"], "filter: filter type used in phase retrieval"],
                          1: ["pad", ["True", "False"],
                              "pad: boolean, if pad the data before phase retrieval filtering"],
@@ -140,9 +140,9 @@ FILTER_PARAM_DICT = OrderedDict(
          6: ["sigma", 1,
              "sigma: The noise standard deviation used when computing the wavelet detail coefficient threshold(s). When None (default), the noise standard deviation is estimated via the method in [2]"],
          7: ["wavelet_levels", 3,
-             "wavelet_levels: The number of wavelet decomposition levels to use. The default is three less than the maximum number of possible decomposition levels"]}})
+             "wavelet_levels: The number of wavelet decomposition levels to use. The default is three less than the maximum number of possible decomposition levels"]}}))
 
-ALG_PARAM_DICT = OrderedDict({"gridrec": {
+ALG_PARAM_DICT = dict(OrderedDict({"gridrec": {
     0: ["filter_name", ["parzen", 'shepp', 'cosine', 'hann', 'hamming', 'ramlak', 'butterworth', 'none'],
         "filter_name: filter that is used in frequency space", str]},
                               "sirt": {3: ["num_gridx", 1280,
@@ -170,7 +170,7 @@ ALG_PARAM_DICT = OrderedDict({"gridrec": {
                                         3: ["extra_options_param", -0.1,
                                             "extra_options_param: parameter used together with extra_options",
                                             np.float32],
-                                        4: ["num_iter", 50, "num_iter: number of reconstruction iterations", int]}})
+                                        4: ["num_iter", 50, "num_iter: number of reconstruction iterations", int]}}))
 
 
 class tomo_recon_gui():
@@ -230,7 +230,7 @@ class tomo_recon_gui():
         self.tomo_use_wedge_ang_auto_det = False
         # self.tomo_read_config = False
 
-        self.tomo_right_filter_dict = OrderedDict({0: {}})
+        self.tomo_right_filter_dict = {0: {}}
 
         self.raw_proj_0 = None
         self.raw_proj_180 = None
@@ -263,7 +263,7 @@ class tomo_recon_gui():
         self.tomo_wedge_ang_auto_det_thres = 0.1
         self.data_info = {}
 
-        self.alg_param_dict = OrderedDict({})
+        self.alg_param_dict = {}
 
     def build_gui(self):
         #################################################################################################################
@@ -455,11 +455,11 @@ class tomo_recon_gui():
         layout = {"width": "19%"}
         self.hs["CenWinWz text"].layout = layout
 
-        self.hs["CenList btn"] = SelectFilesButton(option="askopenfilename",
+        self.hs["ReadConfig_btn"] = SelectFilesButton(option="askopenfilename",
                                                    **{"open_filetypes": (("json files", "*.json"),)})
         layout = {"width": "15%", "height": "85%", "visibility": "hidden"}
-        self.hs["CenList btn"].layout = layout
-        self.hs["CenList btn"].disabled = True
+        self.hs["ReadConfig_btn"].layout = layout
+        self.hs["ReadConfig_btn"].disabled = True
 
         self.hs["UseConfig chbx"] = widgets.Checkbox(value=False, description="Use",
                                                      description_tooltip='Use configuration read from the file',
@@ -470,13 +470,13 @@ class tomo_recon_gui():
         self.hs["RotCen text"].observe(self.RotCen_text_chg, names="value")
         self.hs["CenWinLeft text"].observe(self.CenWinLeft_text_chg, names="value")
         self.hs["CenWinWz text"].observe(self.CenWinWz_text_chg, names="value")
-        self.hs["CenList btn"].on_click(self.CenList_btn_clk)
+        self.hs["ReadConfig_btn"].on_click(self.ReadConfig_btn_clk)
         self.hs["UseConfig chbx"].observe(self.UseConfig_chbx_chg, names='value')
         self.hs["ReconConfig box"].children = [self.hs["ScanId drpdn"],
                                                self.hs["RotCen text"],
                                                self.hs["CenWinLeft text"],
                                                self.hs["CenWinWz text"],
-                                               self.hs["CenList btn"],
+                                               self.hs["ReadConfig_btn"],
                                                self.hs["UseConfig chbx"]]
 
         layout = {"border": "3px solid #FFCC00", "height": f"{0.07 * (self.form_sz[0] - 136)}px"}
@@ -1570,14 +1570,14 @@ class tomo_recon_gui():
             self.hs["AltFlatFile btn"].files = [self.tomo_alt_flat_file]
             self.hs["AltFlatFile btn"].style.button_color = "lightgreen"
         else:
-            self.hs["AltFlatFile btn"].files = None
+            self.hs["AltFlatFile btn"].files = []
             self.hs["AltFlatFile btn"].style.button_color = "orange"
         self.hs["UseAltDark chbx"].value = self.tomo_use_alt_dark
         if self.tomo_use_alt_dark & (self.tomo_alt_dark_file is not None):
             self.hs["AltDarkFile btn"].files = [self.tomo_alt_dark_file]
             self.hs["AltDarkFile btn"].style.button_color = "lightgreen"
         else:
-            self.hs["AltDarkFile btn"].files = None
+            self.hs["AltDarkFile btn"].files = []
             self.hs["AltDarkFile btn"].style.button_color = "orange"
         self.hs["UseFakeFlat chbx"].value = self.tomo_use_fake_flat
         self.hs["UseFakeDark chbx"].value = self.tomo_use_fake_dark
@@ -1618,7 +1618,7 @@ class tomo_recon_gui():
             self.hs["AutoRefFn btn"].files = [self.tomo_wedge_ang_auto_det_ref_fn]
             self.hs["AutoRefFn btn"].style.button_color = "lightgreen"
         else:
-            self.hs["AutoRefFn btn"].files = None
+            self.hs["AutoRefFn btn"].files = []
             self.hs["AutoRefFn btn"].style.button_color = "orange"
         self.hs["MaskRat text"].value = self.tomo_mask_ratio
         self.hs["MissIdxStart text"].value = self.tomo_wedge_missing_s
@@ -1721,10 +1721,11 @@ class tomo_recon_gui():
             self.alg_phs[idx].description_tooltip = alg[idx][2]
 
     def read_alg_param_widgets(self):
-        self.alg_param_dict = OrderedDict({})
+        self.alg_param_dict = {}
         alg = ALG_PARAM_DICT[self.tomo_selected_alg]
         for idx in alg.keys():
             self.alg_param_dict[alg[idx][0]] = alg[idx][-1](self.alg_phs[idx].value)
+        self.alg_param_dict = dict(OrderedDict(self.alg_param_dict))
 
     def reset_flt_param_widgets(self):
         for ii in range(6):
@@ -1763,15 +1764,16 @@ class tomo_recon_gui():
             self.flt_phs[idx].description_tooltip = flt[idx][2]
 
     def read_flt_param_widgets(self):
-        self.flt_param_dict = OrderedDict({})
+        self.flt_param_dict = {}
         flt = FILTER_PARAM_DICT[self.tomo_left_box_selected_flt]
         for idx in flt.keys():
             self.flt_param_dict[flt[idx][0]] = self.flt_phs[idx].value
+        self.flt_param_dict = dict(OrderedDict(self.flt_param_dict))
 
     def read_config(self):
         if os.path.basename(self.tomo_cen_list_file).split('.')[-1] == 'json':
             with open(self.tomo_cen_list_file, 'r') as f:
-                tem = OrderedDict(json.load(f))
+                tem = dict(OrderedDict(json.load(f)))
             return tem
         else:
             print('json is the only allowed configuration file type.')
@@ -1795,7 +1797,7 @@ class tomo_recon_gui():
             self.hs["SelRawH5TopDir btn"].initialdir = os.path.abspath(a.files[0])
             self.hs["SelSavReconDir btn"].initialdir = os.path.abspath(a.files[0])
             self.hs["SelSavDebugDir btn"].initialdir = os.path.abspath(a.files[0])
-            self.hs["CenList btn"].initialdir = os.path.abspath(a.files[0])
+            self.hs["ReadConfig_btn"].initialdir = os.path.abspath(a.files[0])
             self.hs["AltFlatFile btn"].initialdir = os.path.abspath(a.files[0])
             self.hs["AltDarkFile btn"].initialdir = os.path.abspath(a.files[0])
             self.hs["AutoRefFn btn"].initialdir = os.path.abspath(a.files[0])
@@ -1875,7 +1877,7 @@ class tomo_recon_gui():
         self.tomo_recon_type = a["owner"].value
         if self.tomo_recon_type == "Trial Cent":
             layout = {"width": "15%", "height": "85%", "visibility": "hidden"}
-            self.hs["CenList btn"].layout = layout
+            self.hs["ReadConfig_btn"].layout = layout
             layout = {"width": "7%", "visibility": "hidden"}
             self.hs["UseConfig chbx"].layout = layout
             layout = {"width": "19%", "visibility": "visible"}
@@ -1896,7 +1898,7 @@ class tomo_recon_gui():
             self.hs["SelSavReconDir btn"].style.button_color = "orange"
             self.hs["SelSavReconDir text"].value = "Select top directory where recon subdirectories will be created..."
             layout = {"width": "15%", "height": "85%", "visibility": "visible"}
-            self.hs["CenList btn"].layout = layout
+            self.hs["ReadConfig_btn"].layout = layout
             layout = {"width": "7%", "visibility": "visible"}
             self.hs["UseConfig chbx"].layout = layout
             layout = {"width": "19%", "visibility": "hidden"}
@@ -2050,7 +2052,7 @@ class tomo_recon_gui():
         self.boxes_logic()
         self.tomo_compound_logic()
 
-    def CenList_btn_clk(self, a):
+    def ReadConfig_btn_clk(self, a):
         if self.tomo_use_read_config and (a.files[0] is not None):
             self.tomo_cen_list_file = a.files[0]
             tem = self.read_config()
