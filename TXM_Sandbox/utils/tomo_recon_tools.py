@@ -637,9 +637,8 @@ def run_engine(**kwargs):
             print('Reconstruction finishes!')
             rec_logging = True
             if rec_logging is True:
-                fout = os.path.join(Path(file_recon_template).parents[0],
-                                    ''.join(os.path.basename(file_raw_fn).split('.')[:-1]) + \
-                                    '_recon_log.txt')
+                fout = Path(file_recon_template).parents[0]/\
+                            ''.join(os.path.basename(file_raw_fn).split('.')[:-1]) + '_recon_log.txt'
                 fo = open(fout, "w")
                 for k, v in kwargs.items():
                     fo.write(str(k) + ': ' + str(v) + '\n\n')
