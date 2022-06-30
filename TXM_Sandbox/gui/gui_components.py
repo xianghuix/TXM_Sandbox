@@ -6,6 +6,7 @@ Created on Thu May 21 19:37:47 2020
 @author: xiao
 """
 import os, glob, h5py, numpy as np
+from pathlib import Path
 
 import traitlets
 from tkinter import Tk, filedialog, Toplevel, Label, Button
@@ -90,7 +91,7 @@ class SelectFilesButton(widgets.Button):
         if 'initialdir' in kwargs.keys():
             gui_h.initialdir = kwargs['initialdir']
         else:
-            gui_h.initialdir = '/NSLS2/xf18id1/users/2020Q1/YUAN_YANG_Proposal_305811'
+            gui_h.initialdir = Path('/NSLS2/xf18id1/users/2020Q1/YUAN_YANG_Proposal_305811')
         if 'ext' in kwargs.keys():
             gui_h.ext = kwargs['ext']
         else:

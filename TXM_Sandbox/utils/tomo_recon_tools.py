@@ -757,7 +757,7 @@ def overwrite_dir(path):
         return -1
 
 
-def write_center(tomo, theta, dpath='tmp/center', cen_range=None, ind=None,
+def write_center(tomo, theta, dpath=Path('tmp/center'), cen_range=None, ind=None,
                  mask=False, ratio=1., sinogram_order=False, algorithm='gridrec',
                  filter_name='parzen', **kwargs):
     """

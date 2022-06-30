@@ -33,7 +33,7 @@ except:
     CWD = os.path.abspath(os.path.curdir)
 
 class txm_gui():
-    def __init__(self, fiji_path='/home/xiao/software/Fiji.app', form_sz=[650, 740]):
+    def __init__(self, fiji_path=Path('/home/xiao/software/Fiji.app'), form_sz=[650, 740]):
         try:
             self.ij = imagej.init(fiji_path, headless=False)
             self.ijui = self.ij.ui()

@@ -4,6 +4,7 @@
 import time
 from functools import partial
 from copy import deepcopy
+from pathlib import Path
 import numpy as np
 import tifffile
 from scipy.optimize import (differential_evolution as deo,
@@ -306,7 +307,7 @@ def mrtv_rigid_reg4(tgt, src, pxl_conf, sub_conf, angr, itr=6, ps=None, mask=1, 
         m = np.matmul(set_tran_quad(-np.array(mrtv_shift)), m)
         print(f"{ii + 1}:\t", mrtv_shift, '\n')
         s[:] = shift(s, -np.array(mrtv_shift))
-        tifffile.imsave(fpath.format(str(2 * ii + 1).zfill(2)), (np.abs(s) > 1e-3).astype(np.int8))
+        tifffile.imsave(Path(fpath.format(str(2 * ii + 1).zfill(2))), (np.abs(s) > 1e-3).astype(np.int8))
 
         rlt = deo(rota, [(-10, 10)], args=(tgt, s, mask, gfk, roi, 'tv', order), workers=-1, popsize=popsize)
         m = np.matmul(set_rota_quad(np.pi * rlt.x[-1] / 180), m)
@@ -336,14 +337,14 @@ def mrtv_rigid_reg5(tgt, src, pxl_conf, sub_conf, angr, itr=6, ps=None, mask=1, 
 
     for ii in range(itr):
         gm = (np.abs(s) > 1e-3).astype(np.int8)
-        tifffile.imsave(fpath.format(str(2*ii).zfill(2)), gm)
+        tifffile.imsave(Path(fpath.format(str(2*ii).zfill(2))), gm)
         tp, tpi, ss, mrtv_shift = mrtv_reg_v4(pxl_conf, sub_conf, ps=None, gm=gm, gfk=gfk, imgs=[s, tgt])
         m = np.matmul(set_tran_quad(-np.array(mrtv_shift)), m)
         print(f"{ii + 1}:\t", mrtv_shift, '\n')
         s[:] = shift(s, -np.array(mrtv_shift))
 
         gm = (np.abs(s) > 1e-3).astype(np.int8)
-        tifffile.imsave(fpath.format(str(2*ii+1).zfill(2)), gm)
+        tifffile.imsave(Path(fpath.format(str(2*ii+1).zfill(2))), gm)
         rlt = deo(rota, [(-10, 10)], args=(s, tgt, gm, gfk, roi, 'tv', order), workers=-1, popsize=popsize)
         m = np.matmul(set_rota_quad(-np.pi * rlt.x[-1] / 180), m)
         print(f"{ii + 1}:\t", rlt.x, "\n")
