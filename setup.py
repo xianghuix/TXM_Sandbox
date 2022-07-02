@@ -11,7 +11,7 @@ from setuptools import setup
 setup(name='TXM_Sandbox',
       version='0.1',
       description='Integrated Spectro-Imaging Analysis Toolbox',
-      url='',
+      url='https://github.com/xianghuix/TXM_Sandbox',
       author='Xianghui Xiao',
       author_email='xianghuix@gmail.com',
       license='MIT',
