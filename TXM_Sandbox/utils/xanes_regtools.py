@@ -7,7 +7,7 @@ Created on Wed Aug 21 16:09:13 2019
 """
 
 #import faulthandler; faulthandler.enable()
-import os, gc
+import os, gc, psutil
 import multiprocess as mp
 from functools import partial
 
@@ -19,6 +19,7 @@ import numpy as np
 from silx.io.dictdump import dicttoh5, h5todict
 
 from .reg_algs import mrtv_mpc_combo_reg, mrtv_reg, mrtv_ls_combo_reg, shift_img
+from .io import tiff_vol_reader
 
 N_CPU = os.cpu_count()-1
 __all__ = ['regtools']
@@ -256,7 +257,7 @@ class regtools():
             else:
                 print('fixed_img_id is outside of [img_id_s, img_id_e].')
 
-    def _chunking(self):
+    def _set_chunks(self):
         """
         self.data_pnts: relative number defined as self.img_id_e - self.img_id_s + 1
         self.anchor: relative number defined as self.fixed_img_id - self.img_id_s
@@ -352,7 +353,7 @@ class regtools():
                                   pairs of imgs for shift calculation. the idx of
                                   each pair are relative to self.img_id_s
         """
-        self._chunking()
+        self._set_chunks()
         self.alignment_pair_list = []
 
         if self.use_chunk:
@@ -501,6 +502,29 @@ class regtools():
                     abs_shift_dict[str(key).zfill(3)] = {'in_sli_shift':shift}
             f.close()
         self.abs_shift_dict = abs_shift_dict
+
+    def _chunking(self, dim, mem_lim=None):
+        img_sz = (dim[1]*dim[2]*4)
+        if mem_lim is None:
+            mem = psutil.virtual_memory()
+            mem_lim = mem.available/3.
+        mem_lim = (mem_lim//img_sz)*img_sz
+        while (dim[0]*img_sz%mem_lim)*mem_lim/img_sz < N_CPU:
+            mem_lim += N_CPU*img_sz
+        num_img_in_batch = np.round(mem_lim/img_sz/N_CPU)*N_CPU
+        num_batch = int(np.ceil(dim[0]/num_img_in_batch))
+        bdi = []
+        chunk = int(np.round(num_img_in_batch/N_CPU))
+        for ii in range(num_batch):
+            if ii < num_batch-1:
+                for jj in range(N_CPU):
+                    bdi.append(int(ii*num_img_in_batch + jj*chunk))
+            else:
+                chunk = int(np.ceil((dim[0] - ii*num_img_in_batch)/N_CPU))
+                for jj in range(N_CPU+1):
+                    bdi.append(int(ii*num_img_in_batch + jj*chunk))
+                bdi[-1] = min(dim[0], bdi[-1])
+        return bdi, num_batch
 
     def reg_xanes2D_chunk(self, overlap_ratio=0.3):
         """
@@ -1143,7 +1167,8 @@ class regtools():
         f.close()
 
     def apply_xanes3D_chunk_shift(self, shift_dict, sli_s, sli_e,
-                                  trialfn=None, savefn=None, optional_shift_dict=None):
+                                  trialfn=None, savefn=None,
+                                  optional_shift_dict=None, mem_lim=None):
         """
         shift_dict: disctionary;
                     user-defined shift list based on visual inspections of
@@ -1225,7 +1250,7 @@ class regtools():
                 g2 = g0.create_group('reg_results')
                 g21 = g2.create_dataset('registered_xanes3D',
                                         shape=(len(self.img_ids_dict),
-                                               sli_e-sli_s,
+                                               sli_e-sli_s+1,
                                                self.roi[1]-self.roi[0],
                                                self.roi[3]-self.roi[2]))
                 g22 = g2.create_dataset('eng_list', shape=(len(self.img_ids_dict),))
@@ -1249,17 +1274,34 @@ class regtools():
                         shift[0] -= yshift_int
                         shift[1] -= xshift_int
 
-                    for ii in range(int(sli_s+slioff), int(sli_e+slioff)):
-                        # print(4)
-                        fn = self.xanes3D_recon_path_template.format(scan_id,
-                                                                     str(ii).zfill(5))
-                        img[:] = tifffile.imread(fn)[self.roi[0]-yshift_int:self.roi[1]-yshift_int,
-                                                     self.roi[2]-xshift_int:self.roi[3]-xshift_int]
-
-                        self._translate_single_img(img, shift, self.method)
-                        g21[cnt1, cnt2] = img[:]
-                        cnt2 += 1
-
+                    # for ii in range(int(sli_s+slioff), int(sli_e+slioff)):
+                    #     # print(4)
+                    #     fn = self.xanes3D_recon_path_template.format(scan_id,
+                    #                                                  str(ii).zfill(5))
+                    #     img[:] = tifffile.imread(fn)[self.roi[0]-yshift_int:self.roi[1]-yshift_int,
+                    #                                  self.roi[2]-xshift_int:self.roi[3]-xshift_int]
+                    #
+                    #     self._translate_single_img(img, shift, self.method)
+                    #     g21[cnt1, cnt2] = img[:]
+                    #     cnt2 += 1
+                    # g22[cnt1] = self.eng_dict[key]
+                    # cnt1 += 1
+                    bdi, num_batch = self._chunking([sli_e-sli_s+1, self.roi[1]-self.roi[0], self.roi[3]-self.roi[2]],
+                                                    mem_lim=mem_lim)
+                    for i in range(num_batch):
+                        img = tiff_vol_reader(self.xanes3D_recon_path_template, scan_id,
+                                              [sli_s+slioff+bdi[i*N_CPU], sli_s+slioff+bdi[(i+1)*N_CPU],
+                                               self.roi[0]-yshift_int, self.roi[1]-yshift_int,
+                                               self.roi[2]-xshift_int, self.roi[3]-xshift_int])
+                        print(f"{img.shape=}")
+                        with mp.Pool(N_CPU) as pool:
+                            rlt = pool.map(partial(self._translate_vol_img, shift, self.method), [
+                                           img[bdi[i*N_CPU+ii-1]:bdi[i*N_CPU+ii], ...] for ii in range(N_CPU)])
+                        pool.close()
+                        pool.join()
+                        rlt = np.array(rlt, dtype=object)
+                        print(f"{g21[cnt1, bdi[i*N_CPU]:bdi[(i+1)*N_CPU], ...].shape=}, {img.shape=}")
+                        g21[cnt1, bdi[i*N_CPU]:bdi[(i+1)*N_CPU], ...] = img[:]
                     g22[cnt1] = self.eng_dict[key]
                     cnt1 += 1
 
@@ -1457,6 +1499,10 @@ class regtools():
         else:
             print('Nonrecognized method. Quit!')
             # exit()
+
+    def _translate_vol_img(self, shift, method, img):
+        for ii in range(img.shape[0]):
+            self._translate_single_img(img[ii], shift, method)
 
     def xanes3D_shell_slicing(self, fn):
         pass

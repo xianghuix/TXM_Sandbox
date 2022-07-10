@@ -737,6 +737,21 @@ class xanes3D_tools_gui():
             elif ((self.xanes_file_configured & self.xanes_indices_configured) &
                   (self.xanes_roi_configured & self.xanes_reg_params_configured) &
                   (self.xanes_reg_done & self.xanes_reg_review_done) &
+                  (self.xanes_alignment_done & (self.xanes_element is None))):
+                boxes = ['ConfigData box',
+                         '3DRoi box',
+                         'ConfigRegParams box',
+                         'RunReg box',
+                         'RevRegRlt box',
+                         'AlignRecon box',
+                         'VisImg box']
+                enable_disable_boxes(self.hs, boxes, disabled=False, level=-1)
+                boxes = ['Fitting form']
+                enable_disable_boxes(self.xanes_fit_gui_h.hs,
+                                     boxes, disabled=True, level=-1)
+            elif ((self.xanes_file_configured & self.xanes_indices_configured) &
+                  (self.xanes_roi_configured & self.xanes_reg_params_configured) &
+                  (self.xanes_reg_done & self.xanes_reg_review_done) &
                   (self.xanes_alignment_done & (not self.xanes_fit_eng_configured))):
                 boxes = ['ConfigData box',
                          '3DRoi box',
@@ -2745,14 +2760,19 @@ class xanes3D_tools_gui():
                 self.xanes_scan_id_e = f['/trial_registration/trial_reg_parameters/scan_ids'][-1]
 
             self.xanes_element = determine_element(self.xanes_fit_eng_list)
-            tem = determine_fitting_energy_range(self.xanes_element)
-            self.xanes_fit_edge_eng = tem[0]
-            self.xanes_fit_wl_fit_eng_s = tem[1]
-            self.xanes_fit_wl_fit_eng_e = tem[2]
-            self.xanes_fit_pre_edge_e = tem[3]
-            self.xanes_fit_post_edge_s = tem[4]
-            self.xanes_fit_edge_0p5_fit_s = tem[5]
-            self.xanes_fit_edge_0p5_fit_e = tem[6]
+            if self.xanes_element is None:
+                print("Cannot determine the element edge. Maybe there is not enough number of energy points. Skip XANES fitting")
+            else:
+                tem = determine_fitting_energy_range(self.xanes_element)
+                self.xanes_fit_edge_eng = tem[0]
+                self.xanes_fit_wl_fit_eng_s = tem[1]
+                self.xanes_fit_wl_fit_eng_e = tem[2]
+                self.xanes_fit_pre_edge_e = tem[3]
+                self.xanes_fit_post_edge_s = tem[4]
+                self.xanes_fit_edge_0p5_fit_s = tem[5]
+                self.xanes_fit_edge_0p5_fit_e = tem[6]
+                self.xanes_fit_type = 'full'
+                self.xanes_fit_gui_h.hs['FitEngRagOptn drpdn'].value = 'full'
 
             self.hs['VisImgViewAlignSli sldr'].value = 1
             self.hs['VisImgViewAlign4thDim sldr'].value = 0
@@ -2764,8 +2784,6 @@ class xanes3D_tools_gui():
             self.hs['VisImgViewAlign4thDim sldr'].max = self.xanes_fit_data_shape[1]-1
             self.hs['VisImgViewAlign4thDim sldr'].min = 0
             self.hs['SelFile&PathCfm text'].value = 'XANES3D file config is done ...'
-            self.xanes_fit_type = 'full'
-            self.xanes_fit_gui_h.hs['FitEngRagOptn drpdn'].value = 'full'
         else:
             self.hs['AlignReconCfm text'].value = 'something wrong in XANES3D alignment ...'
         self.boxes_logic()

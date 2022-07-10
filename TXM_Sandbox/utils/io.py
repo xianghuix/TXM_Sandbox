@@ -180,3 +180,10 @@ def data_info(func):
 def read_xanes2D_wl_fit(fn):
     with h5py.File(fn, 'r') as f:
         return f['/processed_XANES2D/proc_spectrum/whiteline_pos_fit'][:]
+
+
+def tiff_vol_reader(fn_temp, scan_id, roi):
+    vol = []
+    for ii in range(roi[0], roi[1]):
+        vol.append(tifffile.imread(fn_temp.format(scan_id, str(ii).zfill(5)))[roi[2]:roi[3], roi[4]:roi[5]])
+    return np.array(vol)

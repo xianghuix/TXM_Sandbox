@@ -314,6 +314,8 @@ def determine_element(eng_list):
         return 'V'
     elif ((eng_list.min()<4.984e3) & (eng_list.max()>4.984e3)):
         return 'Ti'
+    else:
+        return None
 
 
 def determine_fitting_energy_range(xanes_element):
