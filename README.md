@@ -26,7 +26,7 @@ includes the Fiji path as its argument. Change the path to your Fiji installatio
 References:
   Please cite these two papers if you use TXM_Sandbox in your works.
 
-1. Xiao, X., Xu, Z., Lin, F. & Lee, W.-K. (2022). J. Synchrotron Rad. 29, 266-275. https://doi.org/10.1107/S1600577521011978
+1. Xiao, X., Xu, Z., Lin, F. & Lee, W.-K., "TXM-Sandbox: an open-source software for transmission X-ray microscopy data analysis" (2022). J. Synchrotron Rad. 29, 266-275. https://doi.org/10.1107/S1600577521011978
 
-2. Xiao, X., Xu, Z., Hou, D., Yang, Z. & Lin, F. (2022). J. Synchrotron Rad. 29, 1085-1094. https://doi.org/10.1107/S1600577522005598
+2. Xiao, X., Xu, Z., Hou, D., Yang, Z. & Lin, F., "Rigid registration algorithm based on the minimization of the total variation of the difference map" (2022). J. Synchrotron Rad. 29, 1085-1094. https://doi.org/10.1107/S1600577522005598
  

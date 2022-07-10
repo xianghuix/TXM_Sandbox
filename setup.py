@@ -9,7 +9,7 @@ Created on Thu Jul 16 22:20:14 2020
 from setuptools import setup, find_packages
 
 setup(name='TXM_Sandbox',
-      version='0.1.4',
+      version='0.1.5',
       description='Integrated Spectro-Imaging Analysis Toolbox',
       url='https://github.com/xianghuix/TXM_Sandbox',
       author='Xianghui Xiao',
@@ -41,4 +41,4 @@ setup(name='TXM_Sandbox',
       zip_safe=False,
       include_package_data=True,
       package_data={
-            "":["LICENSE", "README.md", "TXM_Sandbox/tmp/readme.txt", "TXM_Sandbox/config/*.json"]})
+          "":["LICENSE", "README.md", "TXM_Sandbox/tmp/readme.txt", "TXM_Sandbox/config/*.json", "TXM_GUI2.ipynb"]})

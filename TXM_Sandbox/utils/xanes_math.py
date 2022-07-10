@@ -28,7 +28,6 @@ from .lineshapes import (gaussian, lorentzian, voigt, pvoigt, moffat, pearson7,
                          students_t, expgaussian, donaich, skewed_gaussian,
                          skewed_voigt, step, rectangle, exponential, powerlaw,
                          linear, parabolic, sine, expsine, split_lorentzian, polynd)
-
 from .misc import msgit
 
 

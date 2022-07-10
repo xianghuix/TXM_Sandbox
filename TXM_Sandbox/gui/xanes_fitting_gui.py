@@ -14,8 +14,8 @@ import napari
 from .gui_components import (NumpyArrayEncoder, get_handles, enable_disable_boxes,
                             gen_external_py_script, fiji_viewer_off, fiji_viewer_state,
                             fiji_viewer_on, scale_eng_list, SelectFilesButton, update_json_content)
-import TXM_Sandbox.TXM_Sandbox.utils.xanes_math as xm
-import TXM_Sandbox.TXM_Sandbox.utils.xanes_analysis as xa
+from ..utils import xanes_math as xm
+from ..utils import xanes_analysis as xa
 
 inf = np.inf
 

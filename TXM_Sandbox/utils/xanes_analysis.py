@@ -8,7 +8,6 @@ Created on Sat Sep  7 12:46:23 2019
 
 from pathlib import Path
 import numpy as np
-import TXM_Sandbox.TXM_Sandbox.utils.xanes_math as xm
 import pandas as pd
 from scipy.ndimage import median_filter, uniform_filter
 from scipy.interpolate import splrep, splev
@@ -18,6 +17,7 @@ import multiprocess as mp
 from tomopy.util.mproc import distribute_jobs
 
 from .misc import msgit
+from . import xanes_math as xm
 
 """
     This class include xanes spectrum analyses. These analyses are based on
