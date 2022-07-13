@@ -38,7 +38,7 @@ class xanes2D_tools_gui():
         if self.global_h.io_xanes2D_cfg['use_h5_reader']:
             self.reader = data_reader(xanes2D_h5_reader)
         else:
-            from TXM_Sandbox.TXM_Sandbox.external.user_io import user_xanes2D_reader
+            from TXM_Sandbox.external.user_io import user_xanes2D_reader
             self.reader = data_reader(user_xanes2D_reader)
 
         self.xanes_raw_fn_temp = self.global_h.io_xanes2D_cfg['xanes2D_raw_fn_template']
@@ -2847,7 +2847,7 @@ class xanes2D_tools_gui():
 
         code[ln] = f"import os";
         ln += 1
-        code[ln] = f"from TXM_Sandbox.TXM_Sandbox.utils import xanes_regtools as xr";
+        code[ln] = f"from TXM_Sandbox.utils import xanes_regtools as xr";
         ln += 1
         code[ln] = f"from multiprocessing import freeze_support";
         ln += 1
@@ -3053,7 +3053,7 @@ class xanes2D_tools_gui():
             tmp_dict[key] = tuple(self.xanes_review_shift_dict[key])
         code = {}
         ln = 0
-        code[ln] = f"import TXM_Sandbox.TXM_Sandbox.utils.xanes_regtools as xr";
+        code[ln] = f"import TXM_Sandbox.utils.xanes_regtools as xr";
         ln += 1
         code[ln] = f"reg = xr.regtools(dtype='2D_XANES', method='{self.xanes_reg_method}', mode='TRANSLATION')";
         ln += 1

@@ -35,7 +35,7 @@ class xanes3D_tools_gui():
         if self.global_h.io_xanes3D_cfg['use_h5_reader']:
             self.reader = data_reader(xanes3D_h5_reader)
         else:
-            from TXM_Sandbox.TXM_Sandbox.external.user_io import user_xanes3D_reader
+            from TXM_Sandbox.external.user_io import user_xanes3D_reader
             self.reader = data_reader(user_xanes3D_reader)
 
         self.xanes_raw_fn_temp = self.global_h.io_xanes3D_cfg['tomo_raw_fn_template']
@@ -2506,7 +2506,7 @@ class xanes3D_tools_gui():
         ln = 0
 
         code[ln] = f"import os"; ln+=1
-        code[ln] = f"from TXM_Sandbox.TXM_Sandbox.utils import xanes_regtools as xr"; ln+=1
+        code[ln] = f"from TXM_Sandbox.utils import xanes_regtools as xr"; ln+=1
         code[ln] = f"reg = xr.regtools(dtype='3D_XANES', method='{self.xanes_reg_method}', mode='TRANSLATION')"; ln+=1
         code[ln] = f"from multiprocessing import freeze_support"; ln+=1
         code[ln] = f"if __name__ == '__main__':"; ln+=1
@@ -2738,7 +2738,7 @@ class xanes3D_tools_gui():
 
         code = {}
         ln = 0
-        code[ln] = "import TXM_Sandbox.TXM_Sandbox.utils.xanes_regtools as xr"; ln+=1
+        code[ln] = "import TXM_Sandbox.utils.xanes_regtools as xr"; ln+=1
         code[ln] = "reg = xr.regtools(dtype='3D_XANES', mode='TRANSLATION')"; ln+=1
         code[ln] = f"reg.set_xanes3D_recon_path_template('{self.xanes_recon_3D_tiff_temp}')"; ln+=1
         code[ln] = f"reg.set_roi({self.xanes_roi})"; ln+=1

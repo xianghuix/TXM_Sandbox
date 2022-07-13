@@ -183,7 +183,7 @@ class tomo_recon_gui():
             self.reader = data_reader(tomo_h5_reader)
             self.info_reader = data_info(tomo_h5_info)
         else:
-            from TXM_Sandbox.TXM_Sandbox.external.user_io import user_tomo_reader, user_tomo_info_reader
+            from TXM_Sandbox.external.user_io import user_tomo_reader, user_tomo_info_reader
             self.reader = data_reader(user_tomo_reader)
             self.info_reader = data_info(user_tomo_info_reader)
 
@@ -2783,9 +2783,9 @@ class tomo_recon_gui():
             ln = 0
             code[ln] = f"from collections import OrderedDict";
             ln += 1
-            code[ln] = f"from TXM_Sandbox.TXM_Sandbox.utils.tomo_recon_tools import run_engine";
+            code[ln] = f"from TXM_Sandbox.utils.tomo_recon_tools import run_engine";
             ln += 1
-            code[ln] = f"from TXM_Sandbox.TXM_Sandbox.utils.io import data_reader, tomo_h5_reader, data_info, tomo_h5_info";
+            code[ln] = f"from TXM_Sandbox.utils.io import data_reader, tomo_h5_reader, data_info, tomo_h5_info";
             ln += 1
             code[ln] = f"params = {self.tomo_recon_param_dict}";
             ln += 1
@@ -2797,7 +2797,7 @@ class tomo_recon_gui():
             ln += 1
             code[ln] = f"else:";
             ln += 1
-            code[ln] = f"    from TXM_Sandbox.TXM_Sandbox.external.user_io import user_tomo_reader, user_tomo_info_reader";
+            code[ln] = f"    from TXM_Sandbox.external.user_io import user_tomo_reader, user_tomo_info_reader";
             ln += 1
             code[ln] = f"    self.reader = data_reader(user_tomo_reader)";
             ln += 1
@@ -2838,9 +2838,9 @@ class tomo_recon_gui():
                         ln = 0
                         code[ln] = f"from collections import OrderedDict";
                         ln += 1
-                        code[ln] = f"from TXM_Sandbox.TXM_Sandbox.utils.tomo_recon_tools import run_engine";
+                        code[ln] = f"from TXM_Sandbox.utils.tomo_recon_tools import run_engine";
                         ln += 1
-                        code[ln] = f"from TXM_Sandbox.TXM_Sandbox.utils.io import data_reader, tomo_h5_reader, data_info, tomo_h5_info";
+                        code[ln] = f"from TXM_Sandbox.utils.io import data_reader, tomo_h5_reader, data_info, tomo_h5_info";
                         ln += 1
                         code[ln] = f"params = {self.tomo_recon_param_dict}";
                         ln += 1

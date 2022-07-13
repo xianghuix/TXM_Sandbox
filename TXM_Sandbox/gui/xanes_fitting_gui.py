@@ -1786,8 +1786,8 @@ class xanes_fitting_gui():
 
             ln = 0
             code = {}
-            code[ln] = f"import TXM_Sandbox.TXM_Sandbox.utils.xanes_analysis as xa";ln += 1
-            code[ln] = f"import TXM_Sandbox.TXM_Sandbox.utils.xanes_math as xm";ln += 1
+            code[ln] = f"import TXM_Sandbox.utils.xanes_analysis as xa";ln += 1
+            code[ln] = f"import TXM_Sandbox.utils.xanes_math as xm";ln += 1
             code[ln] = f"import numpy as np";ln += 1
             code[ln] = f"import h5py";ln += 1
             code[ln] = f"";ln += 1
@@ -2304,9 +2304,9 @@ class xanes_fitting_gui():
             code[ln] = f"import numpy as np"; ln += 1
             code[ln] = f"import pandas as pd";ln += 1
             code[ln] = f"from scipy.ndimage import zoom";ln += 1
-            code[ln] = f"import TXM_Sandbox.TXM_Sandbox.utils.xanes_math as xm"; ln += 1
-            code[ln] = f"import TXM_Sandbox.TXM_Sandbox.utils.xanes_analysis as xa"; ln += 1
-            code[ln] = f"from TXM_Sandbox.TXM_Sandbox.utils.misc import str2bool";ln += 1
+            code[ln] = f"import TXM_Sandbox.utils.xanes_math as xm"; ln += 1
+            code[ln] = f"import TXM_Sandbox.utils.xanes_analysis as xa"; ln += 1
+            code[ln] = f"from TXM_Sandbox.utils.misc import str2bool";ln += 1
             code[ln] = f"from copy import deepcopy"; ln += 1
             code[ln] = f"inf = np.inf"; ln += 1
             code[ln] = f""; ln += 1
@@ -2665,9 +2665,9 @@ class xanes_fitting_gui():
             code[ln] = f"import numpy as np"; ln += 1
             code[ln] = f"import pandas as pd";ln += 1
             code[ln] = f"from scipy.ndimage import zoom";ln += 1
-            code[ln] = f"import TXM_Sandbox.TXM_Sandbox.utils.xanes_math as xm"; ln += 1
-            code[ln] = f"import TXM_Sandbox.TXM_Sandbox.utils.xanes_analysis as xa"; ln += 1
-            code[ln] = f"from TXM_Sandbox.TXM_Sandbox.utils.misc import str2bool";ln += 1
+            code[ln] = f"import TXM_Sandbox.utils.xanes_math as xm"; ln += 1
+            code[ln] = f"import TXM_Sandbox.utils.xanes_analysis as xa"; ln += 1
+            code[ln] = f"from TXM_Sandbox.utils.misc import str2bool";ln += 1
             code[ln] = f"from copy import deepcopy"; ln += 1
             code[ln] = f"inf = np.inf"; ln += 1
             # code[ln] = f"os.system('taskset -p 0xff %d' % os.getpid())"; ln += 1

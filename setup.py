@@ -9,7 +9,7 @@ Created on Thu Jul 16 22:20:14 2020
 from setuptools import setup, find_packages
 
 setup(name='TXM_Sandbox',
-      version='0.1.5',
+      version='0.1.6',
       description='Integrated Spectro-Imaging Analysis Toolbox',
       url='https://github.com/xianghuix/TXM_Sandbox',
       author='Xianghui Xiao',
