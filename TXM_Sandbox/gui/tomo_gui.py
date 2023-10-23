@@ -3769,7 +3769,7 @@ class tomo_recon_gui:
             code[ln] = f"run_engine(**params)"
             ln += 1
             gen_external_py_script(self.tomo_recon_external_command_name, code)
-            sig = os.system(f"python {self.tomo_recon_external_command_name}")
+            sig = os.system(f'python "{self.tomo_recon_external_command_name}"')
             if sig == 0:
                 boxes = ["TrialCenPrev box"]
                 enable_disable_boxes(self.hs, boxes, disabled=False, level=-1)
@@ -3828,9 +3828,7 @@ class tomo_recon_gui:
                         gen_external_py_script(
                             self.tomo_recon_external_command_name, code
                         )
-                        sig = os.system(
-                            f"python {self.tomo_recon_external_command_name}"
-                        )
+                        sig = os.system(f'python "{self.tomo_recon_external_command_name}"')
 
                         if sig == 0:
                             print(f"Reconstruction of {key} is done.")
