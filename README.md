@@ -4,8 +4,9 @@ This is a GUI program based on Jupyter that integrates tomography reconstruction
 
 Installation
   via conda-forge
-
-	conda create -n pytxm python=3.10 txm_sandbox -c conda-forge
+	conda deactivate
+	conda update conda
+	conda create -n pytxm python=3.11 txm_sandbox -c conda-forge
 	conda activate pytxm
 
 
