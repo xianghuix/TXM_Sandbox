@@ -366,16 +366,16 @@ def read_data(reader, fn, cfg, sli_start=0, sli_end=20,
 
 
 def retrieve_phase(data, pixel_size=1e-4, dist=50, energy=20,
-                   alpha=1e-3, pad=True, filter='paganin'):
+                   alpha=1e-3, pad=True, filter='paganin',ncore=None):
     if filter == 'paganin':
         data[:] = tomopy.prep.phase.retrieve_phase(data, pixel_size=pixel_size,
                                                    dist=dist, energy=energy,
-                                                   alpha=alpha, pad=pad)[:]
+                                                   alpha=alpha, pad=pad,ncore=ncore)[:]
     elif filter == 'bronnikov':
         data[:] = (1 - data)[:]
         data[:] = tomopy.prep.phase.retrieve_phase(data, pixel_size=pixel_size,
                                                    dist=dist, energy=energy,
-                                                   alpha=alpha, pad=pad)[:]
+                                                   alpha=alpha, pad=pad,ncore=ncore)[:]
     return data
 
 
@@ -656,6 +656,9 @@ def run_filter(data, flt):
     flt_name = flt['filter_name']
     params = translate_params(flt['params'])
     print('running', flt_name)
+    if os.name == 'nt' and os.cpu_count > 63: # Only run on Windows, and only for certain filters, solution to _winapi.WaitForMultipleObjects max 63 objects
+        if 'stripe_removal' in flt_name or 'phase retrieval' in flt_name:
+            params['ncore'] = 40
     if flt_name == "denoise: wiener":
         psfw = int(params['psf'])
         params['psf'] = np.ones([psfw, psfw]) / (psfw ** 2)

@@ -2,15 +2,26 @@
 This is a GUI program based on Jupyter that integrates tomography reconstruction and 2D/3D XANES data analysis. It provides a mechanism that allows users to customize the input data file formats.
 
 
-Installation
+## Installation (Linux)
   via conda-forge
 	conda deactivate
 	conda update conda
 	conda create -n pytxm python=3.11 txm_sandbox -c conda-forge
 	conda activate pytxm
 
+## Installation (Windows)
 
-Usage
+Revised for Windows by Adrian Francisco Duran Ornelas, afornela@uci.edu, @afornelas
+
+Install miniconda3 from [https://docs.conda.io/projects/miniconda/en/latest/index.html](https://docs.conda.io/projects/miniconda/en/latest/index.html)
+
+Open the Anaconda Powershell Prompt (miniconda3) and run
+
+	conda create -n pytxm python=3.8 txm_sandbox -c conda-forge
+	conda activate pytxm
+
+## Usage
+
   You also need to install Fiji/ImageJ in your computer. After installing Fiji, you will need to update ImageJ then Fiji from its 'Help' menu. Restart Fiji after the updates.
 
   You will need to copy TXM_GUI2.ipynb into a working directory. Change to that working directory, then run
@@ -23,11 +34,10 @@ Usage
 
 includes the Fiji path as its argument. Change the path to your Fiji installation path. Click on the first cell and do shift+enter will run this cell. This will bring up TXM_Sandbox GUI. 
 
+## References:
 
-References:
   Please cite these two papers if you use TXM_Sandbox in your works.
 
 1. Xiao, X., Xu, Z., Lin, F. & Lee, W.-K., "TXM-Sandbox: an open-source software for transmission X-ray microscopy data analysis" (2022). J. Synchrotron Rad. 29, 266-275. https://doi.org/10.1107/S1600577521011978
 
 2. Xiao, X., Xu, Z., Hou, D., Yang, Z. & Lin, F., "Rigid registration algorithm based on the minimization of the total variation of the difference map" (2022). J. Synchrotron Rad. 29, 1085-1094. https://doi.org/10.1107/S1600577522005598
- 
